@@ -98,12 +98,44 @@ button {
     padding: 15px;
     margin-bottom: 15px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    display: none; /* 初期状態は非表示 */
+    display: none; 
 }
 .focused-shop-panel h2 { margin: 0 0 8px 0; font-size: 1.3rem; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
 .focused-shop-panel p { margin: 6px 0; font-size: 0.9rem; color: #444; }
-.focused-media-zone { display: flex; gap: 8px; overflow-x: auto; margin-top: 10px; padding-bottom: 5px; }
-.focused-media-item img, .focused-media-zone video { width: 100px; height: 75px; object-fit: cover; border-radius: 6px; }
+
+/* 📸 【リニューアル】2x2の写真グリッドレイアウト */
+.focused-media-grid { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 12px; 
+    margin-top: 15px; 
+}
+.focused-media-card {
+    background: #fdfdfd;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+.focused-media-memo {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 1.2rem;
+}
+.focused-media-card img, .focused-media-card video { 
+    width: 100%; 
+    height: 140px; /* 写真を大きく表示 */
+    object-fit: cover; 
+    border-radius: 6px; 
+    cursor: pointer;
+}
 
 .list-section-title {
     font-size: 1.1rem;
@@ -263,7 +295,6 @@ textarea.form-control { height: 80px; resize: vertical; }
 
     <div id="sync-status" class="sync-status-bar">🔄 接続確認中...</div>
 
-    <!-- 🏠 メインメニュー画面 -->
     <div id="page-main" class="page active">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">📍 マイ飲食店マップ</h1>
@@ -290,12 +321,10 @@ textarea.form-control { height: 80px; resize: vertical; }
             <button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="clearFilter()">解除</button>
         </div>
 
-        <!-- 🗺️ 【新規】メイン画面のGoogleマップ表示 -->
         <div id="main-google-map" class="main-map-container">
             <iframe id="iframe-main-map" src="https://maps.google.com/maps?output=embed&q=福岡県福岡市中央区&z=13"></iframe>
         </div>
 
-        <!-- 🎯 【新規】タップされた店舗の情報をここに表示 -->
         <div id="focused-shop-panel" class="focused-shop-panel">
             <h2>
                 <span id="focused-name">店名</span>
@@ -305,7 +334,8 @@ textarea.form-control { height: 80px; resize: vertical; }
             <p id="focused-building-row"><strong>🏢 建物名:</strong> <span id="focused-building"></span></p>
             <p><strong>💰 価格帯:</strong> <span id="focused-price"></span> | <strong>🏷️ ジャンル:</strong> <span id="focused-genre"></span></p>
             <p><strong>📝 備考:</strong> <span id="focused-memo"></span></p>
-            <div id="focused-media-zone" class="focused-media-zone"></div>
+            
+            <div id="focused-media-grid" class="focused-media-grid"></div>
         </div>
 
         <div class="list-section-title">📋 登録店舗一覧 (<span id="shop-count">0</span>件)</div>
@@ -314,7 +344,6 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
     </div>
 
-    <!-- ✍️ 店舗登録画面 -->
     <div id="page-register" class="page">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">✍️ 店舗登録</h1>
@@ -391,12 +420,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFromSpreadsheet();
 });
 
-// 🎯 【新規】一覧タップ時にマップを連動させ、下部に情報を表示するメイン機能
+// 一覧タップ時にマップを連動させ、下部に情報を表示するメイン機能
 function focusShop(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
     
-    // 1. Googleマップの表示をその店舗の住所に切り替え（自動ピン留め状態）
+    // 1. Googleマップの表示をその店舗の住所に切り替え
     const mapIframe = document.getElementById('iframe-main-map');
     const searchAddress = shop.address;
     mapIframe.src = `https://maps.google.com/maps?output=embed&q=${encodeURIComponent(searchAddress)}&z=16`;
@@ -416,30 +445,40 @@ function focusShop(shopId) {
     document.getElementById('focused-genre').innerText = shop.genre || '未設定';
     document.getElementById('focused-memo').innerText = shop.memo || 'なし';
     
-    // 編集ボタン・ナビボタンの動作割り当て
     document.getElementById('focused-edit-btn').onclick = () => editShop(shop.id);
     document.getElementById('focused-app-btn').onclick = () => openNativeMapApp(shop.address, shop.building);
     
-    // メディア（写真・動画）の描画
-    const mediaZone = document.getElementById('focused-media-zone');
-    mediaZone.innerHTML = '';
+    // 📸 【リニューアル】写真とメモの2x2グリッド描画処理
+    const mediaGrid = document.getElementById('focused-media-grid');
+    mediaGrid.innerHTML = '';
+    
     if (shop.files && shop.files.length > 0) {
         shop.files.forEach(file => {
-            const div = document.createElement('div');
-            div.className = 'focused-media-item';
+            const card = document.createElement('div');
+            card.className = 'focused-media-card';
+            
+            // 写真メモ（未入力の場合は空白）
+            const displayMemo = file.memo ? escapeHtml(file.memo) : ' ';
+            
+            let mediaHtml = '';
             if (file.type && file.type.startsWith('video/')) {
-                div.innerHTML = `<video src="${file.data}" controls></video>`;
+                mediaHtml = `<video src="${file.data}" controls></video>`;
             } else {
-                div.innerHTML = `<img src="${file.data}" onclick="window.open('${file.data}')">`;
+                mediaHtml = `<img src="${file.data}" onclick="window.open('${file.data}')">`;
             }
-            mediaZone.appendChild(div);
+            
+            // メモが上、写真が下に配置される構造
+            card.innerHTML = `
+                <div class="focused-media-memo">💬 ${displayMemo}</div>
+                ${mediaHtml}
+            `;
+            mediaGrid.appendChild(card);
         });
-        mediaZone.style.display = 'flex';
+        mediaGrid.style.display = 'grid';
     } else {
-        mediaZone.style.display = 'none';
+        mediaGrid.style.display = 'none';
     }
     
-    // パネルを表示化し、画面を上部へスムーズスクロール
     document.getElementById('focused-shop-panel').style.display = 'block';
     document.getElementById('main-google-map').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -559,7 +598,6 @@ function renderApp() {
         
         const card = document.createElement('div');
         card.className = 'shop-list-card';
-        // タップ時に新設したfocusShop関数を呼び出す
         card.setAttribute('onclick', `focusShop('${shop.id}')`);
         
         let mediaWrapperHtml = '';
@@ -755,7 +793,7 @@ function updateFilterBarDisplay() {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, ''');
 }
 </script>
 </body>
