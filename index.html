@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (初回トークン入力なし版)</title>
+<title>自分専用飲食店マップ (住所候補選択版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -135,26 +135,100 @@ button {
     font-size: 0.8rem;
     color: #555;
 }
-.shop-list-media {
-    display: flex;
-    gap: 5px;
-    margin-left: 10px;
+
+/* 🎯 住所サジェスト用のスタイル定義 */
+.address-suggest-wrapper {
+    position: relative;
 }
-.shop-list-thumb {
-    width: 55px;
-    height: 55px;
-    object-fit: cover;
-    border-radius: 6px;
-    border: 1px solid #eee;
+.suggest-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 2100;
+    display: none;
 }
-.no-data-msg {
-    text-align: center;
-    color: #999;
-    padding: 30px;
-    background: #f0f0f0;
-    border-radius: 12px;
+.suggest-box.active {
+    display: block;
+}
+.suggest-item {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
     font-size: 0.9rem;
 }
+.suggest-item:hover {
+    background-color: #f0f4f9;
+}
+.suggest-item:last-child {
+    border-bottom: none;
+}
+
+.photo-upload-area {
+    border: 2px dashed var(--border-color);
+    padding: 15px;
+    text-align: center;
+    border-radius: 8px;
+    background: #fafafa;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+.preview-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+.preview-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    position: relative;
+}
+.preview-card img, .preview-card video {
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+.preview-card .memo-input {
+    width: 100%;
+    font-size: 0.75rem;
+    padding: 4px;
+    margin-top: 5px;
+    box-sizing: border-box;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+.preview-card .btn-del-photo {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(255,107,107,0.9);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    font-size: 11px;
+    line-height: 20px;
+    text-align: center;
+}
+
+.popup-content h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: var(--primary-color); }
+.popup-content p { margin: 4px 0; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap; }
+.popup-photos { display: flex; gap: 5px; overflow-x: auto; margin-top: 8px; padding-bottom: 5px; }
+.popup-photo-item { flex: 0 0 70px; text-align: center; }
+.popup-photo-item img, .popup-photo-item video { width: 70px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; }
 
 .custom-modal {
     display: none;
@@ -234,66 +308,6 @@ button {
 }
 textarea.form-control { height: 80px; resize: vertical; }
 
-.photo-upload-area {
-    border: 2px dashed var(--border-color);
-    padding: 15px;
-    text-align: center;
-    border-radius: 8px;
-    background: #fafafa;
-    cursor: pointer;
-    margin-bottom: 10px;
-}
-.preview-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
-    margin-top: 10px;
-}
-.preview-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    position: relative;
-}
-.preview-card img, .preview-card video {
-    width: 100%;
-    height: 90px;
-    object-fit: cover;
-    border-radius: 6px;
-}
-.preview-card .memo-input {
-    width: 100%;
-    font-size: 0.75rem;
-    padding: 4px;
-    margin-top: 5px;
-    box-sizing: border-box;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-.preview-card .btn-del-photo {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background: rgba(255,107,107,0.9);
-    color: white;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    padding: 0;
-    font-size: 11px;
-    line-height: 20px;
-    text-align: center;
-}
-
-.popup-content h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: var(--primary-color); }
-.popup-content p { margin: 4px 0; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap; }
-.popup-photos { display: flex; gap: 5px; overflow-x: auto; margin-top: 8px; padding-bottom: 5px; }
-.popup-photo-item { flex: 0 0 70px; text-align: center; }
-.popup-photo-item img, .popup-photo-item video { width: 70px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; }
-.popup-photo-item span { display: block; font-size: 0.65rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
 .active-filter-indicator {
     background: #e3f2fd;
     padding: 6px 12px;
@@ -354,7 +368,7 @@ textarea.form-control { height: 80px; resize: vertical; }
             </div>
         </header>
         
-        <div class="app-content" style="background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.044);">
+        <div class="app-content" style="background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
             <input type="hidden" id="edit-shop-id">
             
             <div class="form-group">
@@ -363,8 +377,13 @@ textarea.form-control { height: 80px; resize: vertical; }
             </div>
             
             <div class="form-group">
-                <label for="shop-address">住所 (※ビル名や階数は含めないでください) </label>
-                <input type="text" id="shop-address" class="form-control" placeholder="例) 福岡県福岡市中央区警固1-4-27">
+                <label for="shop-address">住所 (※候補から選択すると緯度経度が自動固定されます)</label>
+                <div class="address-suggest-wrapper">
+                    <input type="text" id="shop-address" class="form-control" placeholder="例) 福岡市中央区警固1-4-27" oninput="handleAddressInput(this.value)">
+                    <div id="address-suggest-box" class="suggest-box"></div>
+                </div>
+                <input type="hidden" id="shop-lat">
+                <input type="hidden" id="shop-lng">
             </div>
 
             <div class="form-group">
@@ -438,14 +457,74 @@ let markersLayer;
 let markerObjects = {}; 
 let currentFilters = { price: '', genre: '' };
 let uploadedFiles = []; 
+let suggestTimeout = null; // 入力タイマー用
 
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
-    // 💡 初回起動時の checkGitHubToken() ポップアップ呼び出しを削除しました
     loadFromSpreadsheet();
+    
+    // サジェストボックス以外をクリックした時にボックスを閉じる処理
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.address-suggest-wrapper')) {
+            document.getElementById('address-suggest-box').classList.remove('active');
+        }
+    });
 });
 
-// 🔒 トークンをチェックし、無ければ入力させる関数（登録保存時のみ呼び出しに変更）
+// 🎯 リアルタイムの住所入力＆サジェスト取得
+function handleAddressInput(value) {
+    const suggestBox = document.getElementById('address-suggest-box');
+    
+    // 毎回入力するたびに即時リクエストするとサーバーに負荷がかかるため、入力が止まって300ms後に検索する
+    clearTimeout(suggestTimeout);
+    
+    if (!value || value.trim().length < 3) {
+        suggestBox.classList.remove('active');
+        return;
+    }
+    
+    suggestTimeout = setTimeout(async () => {
+        const userAgent = "MyGourmetMapApp/6.0 (contact: map-app-user@example.com)";
+        try {
+            // 日本国内（countrycodes=jp）かつ日本語優先（accept-language=ja）で検索候補を取得
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&countrycodes=jp&accept-language=ja&limit=5`;
+            const res = await fetch(url, { headers: { "User-Agent": userAgent } });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    suggestBox.innerHTML = '';
+                    data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'suggest-item';
+                        div.innerText = item.display_name.replace(', Japan', '').replace('日本、', '');
+                        // クリックした際に住所と緯度経度を自動セットする
+                        div.onclick = () => selectSuggestItem(div.innerText, item.lat, item.lon);
+                        suggestBox.appendChild(div);
+                    });
+                    suggestBox.classList.add('active');
+                } else {
+                    suggestBox.classList.remove('active');
+                }
+            }
+        } catch (e) {
+            console.error("サジェスト取得エラー:", e);
+        }
+    }, 400);
+}
+
+// 🎯 候補が選ばれた際の処理
+function selectSuggestItem(fullAddress, lat, lng) {
+    // 表示を綺麗にするために「市区町村」より前の「郵便番号や国名」の余計な表記があれば簡易トリミング
+    let cleanAddress = fullAddress.trim();
+    
+    document.getElementById('shop-address').value = cleanAddress;
+    document.getElementById('shop-lat').value = lat;
+    document.getElementById('shop-lng').value = lng;
+    
+    // 候補ボックスを隠す
+    document.getElementById('address-suggest-box').classList.remove('active');
+}
+
 function checkAndPromptGitHubToken() {
     if (!GITHUB_TOKEN) {
         const token = prompt("GitHubの「個人アクセストークン(PAT)」を入力してください（写真の保存に必要です。ブラウザに安全に記憶されます）:");
@@ -596,7 +675,6 @@ function renderApp() {
                     } else {
                         popupHtml += `<img src="${file.data}" onclick="window.open('${file.data}')" title="クリックで拡大">`;
                     }
-                    popupHtml += `<span title="${escapeHtml(file.memo || '')}">${escapeHtml(file.memo || 'メモなし')}</span>`;
                     popupHtml += `</div>`;
                 }
                 popupHtml += `</div>`;
@@ -705,7 +783,6 @@ function openCustomModal(shop) {
             } else {
                 bodyHtml += `<img src="${file.data}" onclick="window.open('${file.data}')" title="クリックで拡大">`;
             }
-            bodyHtml += `<span title="${escapeHtml(file.memo || '')}">${escapeHtml(file.memo || 'メモなし')}</span>`;
             bodyHtml += `</div>`;
         }
         bodyHtml += `</div>`;
@@ -809,32 +886,11 @@ function renderPhotoPreviews() {
     });
 }
 
-function convertToOpenStreetMapFormat(addressStr) {
-    if (!addressStr) return "";
-    let cleanAddress = addressStr.replace(/^[^\s市区町村]{2,5}?[都道府県]/, "");
-    
-    const kanjiNums = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
-    const toKanji = (numStr) => {
-        return numStr.split("").map(n => kanjiNums[parseInt(n)] || n).join("");
-    };
-
-    const chomeRegex = /(.*?[区市町村][^0-9\-\uFF10-\uFF19]+)([0-9\uFF10-\uFF19]+)(?:[-－丁番]|$)/;
-    let standardized = cleanAddress.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-    
-    const match = standardized.match(chomeRegex);
-    if (match && match[1] && match[2]) {
-        let kanjiChome = toKanji(match[2]) + "丁目";
-        return match[1] + kanjiChome;
-    }
-    
-    return cleanAddress;
-}
-
+// バックアップ用フォールバック検索関数
 async function fetchCoordinatesWithFallback(addressStr) {
-    const userAgent = "MyGourmetMapApp/4.0 (contact: map-app-user@example.com)";
-    
+    const userAgent = "MyGourmetMapApp/6.0 (contact: map-app-user@example.com)";
     try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr)}`;
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr)}&countrycodes=jp&limit=1`;
         const res = await fetch(url, { headers: { "User-Agent": userAgent } });
         if (res.ok) {
             const data = await res.json();
@@ -843,30 +899,8 @@ async function fetchCoordinatesWithFallback(addressStr) {
             }
         }
     } catch (e) {
-        console.error("標準検索エラー:", e);
+        console.error("フォールバック検索エラー:", e);
     }
-
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const osmFormatAddress = convertToOpenStreetMapFormat(addressStr);
-    
-    if (osmFormatAddress && osmFormatAddress !== addressStr) {
-        try {
-            console.log(`OpenStreetMap用に住所を最適化しました: [${osmFormatAddress}]`);
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(osmFormatAddress)}`;
-            const res = await fetch(url, { headers: { "User-Agent": userAgent } });
-            if (res.ok) {
-                const data = await res.json();
-                if (data && data.length > 0) {
-                    console.log(`最適化住所で位置特定に成功しました！`);
-                    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-                }
-            }
-        } catch (e) {
-            console.error("最適化住所検索エラー:", e);
-        }
-    }
-
     return { lat: null, lng: null };
 }
 
@@ -879,12 +913,15 @@ async function saveRegisteredShop() {
     const memo = document.getElementById('shop-memo').value.trim();
     let id = document.getElementById('edit-shop-id').value;
     
+    // サジェスト選択時に保持された緯度経度
+    let lat = document.getElementById('shop-lat').value ? parseFloat(document.getElementById('shop-lat').value) : null;
+    let lng = document.getElementById('shop-lng').value ? parseFloat(document.getElementById('shop-lng').value) : null;
+    
     if (!name) {
         alert("店名は必須入力です。");
         return;
     }
     
-    // 💡 登録ボタンが押されたタイミングで、トークンが無ければ入力を求めます
     if (uploadedFiles.length > 0) {
         const hasToken = checkAndPromptGitHubToken();
         if (!hasToken) {
@@ -930,10 +967,8 @@ async function saveRegisteredShop() {
         }
     }
     
-    let lat = null;
-    let lng = null;
-
-    if (address) {
+    // 🎯 候補を選択せずに直接登録した場合、または編集時などで値が空な場合は、最後の手段として検索を実行
+    if (address && (!lat || !lng)) {
         statusLabel.innerText = "⏳ 住所から位置情報を検索中...";
         const coords = await fetchCoordinatesWithFallback(address);
         lat = coords.lat;
@@ -985,6 +1020,10 @@ function editShop(id) {
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-memo').value = shop.memo || '';
     
+    // 編集時は元の緯度経度を隠し要素に入れておく
+    document.getElementById('shop-lat').value = shop.lat || '';
+    document.getElementById('shop-lng').value = shop.lng || '';
+    
     uploadedFiles = shop.files ? JSON.parse(JSON.stringify(shop.files)) : [];
     renderPhotoPreviews();
     map.closePopup();
@@ -998,6 +1037,8 @@ function clearForm() {
     document.getElementById('shop-price').value = '';
     document.getElementById('shop-genre').value = '';
     document.getElementById('shop-memo').value = '';
+    document.getElementById('shop-lat').value = '';
+    document.getElementById('shop-lng').value = '';
     uploadedFiles = [];
     document.getElementById('preview-zone').innerHTML = '';
 }
