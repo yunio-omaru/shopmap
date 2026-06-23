@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (ビル名欄追加・バグ修正版)</title>
+<title>自分専用飲食店マップ (住所補正強化版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -66,7 +66,6 @@ button {
 .page { display: none; }
 .page.active { display: block; }
 
-/* メインメニュー用スタイル */
 .menu-bar {
     display: flex;
     justify-content: flex-end;
@@ -82,7 +81,6 @@ button {
     z-index: 1;
 }
 
-/* 店舗リスト表示エリアのスタイル */
 .list-section-title {
     font-size: 1.1rem;
     font-weight: bold;
@@ -157,7 +155,6 @@ button {
     font-size: 0.9rem;
 }
 
-/* 位置情報未取得店舗用のカスタムモーダル（ポップアップ表示） */
 .custom-modal {
     display: none;
     position: fixed;
@@ -187,14 +184,7 @@ button {
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
-.modal-close-btn {
-    background: none;
-    font-size: 1.5rem;
-    padding: 0;
-    color: #999;
-}
 
-/* フィルター用ドロップダウンタブ */
 .filter-tab {
     display: none;
     position: absolute;
@@ -219,7 +209,6 @@ button {
 .filter-item:hover { background-color: #f0f0f0; }
 .filter-item.selected { background-color: #e3f2fd; color: var(--primary-color); font-weight: bold; }
 
-/* 登録画面用スタイル */
 .form-group {
     margin-bottom: 15px;
 }
@@ -244,7 +233,6 @@ button {
 }
 textarea.form-control { height: 80px; resize: vertical; }
 
-/* 写真アップロード・プレビュー領域 */
 .photo-upload-area {
     border: 2px dashed var(--border-color);
     padding: 15px;
@@ -298,7 +286,6 @@ textarea.form-control { height: 80px; resize: vertical; }
     text-align: center;
 }
 
-/* ポップアップ内のスタイル */
 .popup-content h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: var(--primary-color); }
 .popup-content p { margin: 3px 0; font-size: 0.85rem; }
 .popup-photos { display: flex; gap: 5px; overflow-x: auto; margin-top: 8px; padding-bottom: 5px; }
@@ -306,7 +293,6 @@ textarea.form-control { height: 80px; resize: vertical; }
 .popup-photo-item img, .popup-photo-item video { width: 70px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; }
 .popup-photo-item span { display: block; font-size: 0.65rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* アクティブなフィルターの明示 */
 .active-filter-indicator {
     background: #e3f2fd;
     padding: 6px 12px;
@@ -376,7 +362,7 @@ textarea.form-control { height: 80px; resize: vertical; }
             </div>
             
             <div class="form-group">
-                <label for="shop-address">住所 (※位置特定のため、ビル名や階数はここに入れないでください) </label>
+                <label for="shop-address">住所 (※ビル名や階数は含めないでください) </label>
                 <input type="text" id="shop-address" class="form-control" placeholder="例) 福岡県福岡市中央区警固1-4-27">
             </div>
 
@@ -428,7 +414,7 @@ textarea.form-control { height: 80px; resize: vertical; }
             <button id="modal-edit-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;">編集</button>
         </div>
         <div id="modal-shop-body" class="popup-content">
-            </div>
+        </div>
         <div style="text-align: right; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
             <button class="btn-secondary" onclick="closeCustomModal(null)">閉じる</button>
         </div>
@@ -439,19 +425,13 @@ textarea.form-control { height: 80px; resize: vertical; }
 <script>
 let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
 
-// ⚙️ 【環境設定】GitHubのユーザー名とリポジトリ名
 const GITHUB_OWNER = "ここにあなたのGitHubユーザー名を入力";
 const GITHUB_REPO  = "ここにあなたのリポジトリ名を入力";
 const GITHUB_BRANCH = "main"; 
 
-// 🔗 【環境設定】GASのWebアプリURL
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
 
-let appData = {
-    logs: {},   
-    master: {}  
-};
-
+let appData = { logs: {}, master: {} };
 let map;
 let markersLayer;
 let markerObjects = {}; 
@@ -543,7 +523,7 @@ async function executeSave() {
     saveBtn.disabled = true; 
     saveBtn.innerText = "⏳ 保存中...";
     try {
-        collectFormData();
+        if (!appData.logs) appData.logs = {};
         await saveToSpreadsheet();
     } catch (e) {
         console.error(e);
@@ -552,10 +532,6 @@ async function executeSave() {
         saveBtn.disabled = false;
         saveBtn.innerText = "💾 保存";
     }
-}
-
-function collectFormData() {
-    if (!appData.logs) appData.logs = {};
 }
 
 function renderApp() {
@@ -582,10 +558,8 @@ function renderApp() {
         
         matchCount++;
         
-        // フル住所（表示用）の作成
         const fullAddressDisplay = shop.address + (shop.building ? ' ' + shop.building : '');
         
-        // ① 地図へのピン設置処理
         if (shop.lat && shop.lng) {
             const marker = L.marker([shop.lat, shop.lng]);
             
@@ -622,11 +596,9 @@ function renderApp() {
             
             marker.bindPopup(popupHtml);
             markersLayer.addLayer(marker);
-            
             markerObjects[shop.id] = marker;
         }
         
-        // ② 下部リストカードの作成
         const card = document.createElement('div');
         card.className = 'shop-list-card';
         card.setAttribute('onclick', `focusShopOnMap('${shop.id}', ${shop.lat}, ${shop.lng})`);
@@ -820,10 +792,68 @@ function renderPhotoPreviews() {
     });
 }
 
+// 🛠️ 【機能強化】「丁目」対応フォールバックロジック
+async function fetchCoordinatesWithFallback(addressStr) {
+    const userAgent = "MyGourmetMapApp/2.0 (contact: map-app-user@example.com)";
+    
+    // パターン①：元の住所のまま検索
+    try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr)}`;
+        const res = await fetch(url, { headers: { "User-Agent": userAgent } });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.length > 0) {
+                return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+            }
+        }
+    } catch (e) {
+        console.error("第1検索エラー:", e);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    // パターン②：「〇-〇-〇」のようなハイフン表記を「〇丁目」の形式に整形して広域フォールバック
+    // 例:「福岡市中央区警固1-4-27」➔「福岡市中央区警固1丁目」に変えて検索
+    let fallbackAddress = "";
+    
+    // 住所から「警固1-」や「警固1」の部分を抜き出して「警固1丁目」に強制変換する
+    const chomeRegex = /(.*?[区市町村][^0-9\-\uFF10-\uFF19]+)(\d+|[\uFF10-\uFF19]+)(?:[-－丁番]|$)/;
+    const match = addressStr.match(chomeRegex);
+    
+    if (match && match[1] && match[2]) {
+        // 全角数字を半角に直して「丁目」を付与
+        let num = match[2].replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+        fallbackAddress = match[1] + num + "丁目";
+    } else {
+        // 上記で拾えない場合は、市区町村の後の最初の漢字の塊まで切り詰める
+        const kanjiMatch = addressStr.match(/(.*?[区市町村].*?[\u4e00-\u9fa5]+)/);
+        if (kanjiMatch && kanjiMatch[1]) fallbackAddress = kanjiMatch[1];
+    }
+
+    if (fallbackAddress && fallbackAddress !== addressStr) {
+        try {
+            console.log(`広域補正住所で再検索します: ${fallbackAddress}`);
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackAddress)}`;
+            const res = await fetch(url, { headers: { "User-Agent": userAgent } });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    console.log(`補正住所 [${fallbackAddress}] でピンを生成しました。`);
+                    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                }
+            }
+        } catch (e) {
+            console.error("補正住所検索エラー:", e);
+        }
+    }
+
+    return { lat: null, lng: null };
+}
+
 async function saveRegisteredShop() {
     const name = document.getElementById('shop-name').value.trim();
     const address = document.getElementById('shop-address').value.trim();
-    const building = document.getElementById('shop-building').value.trim(); // 📥 ビル名取得
+    const building = document.getElementById('shop-building').value.trim(); 
     const price = document.getElementById('shop-price').value.trim();
     const genre = document.getElementById('shop-genre').value.trim();
     const memo = document.getElementById('shop-memo').value.trim();
@@ -879,36 +909,14 @@ async function saveRegisteredShop() {
         }
     }
     
-    // 🛠️ 【バグ修正点】住所が書き換わったか、または新規登録なら必ず位置情報を検索する
-    let shouldGeocode = true;
-    if (id && appData.logs[id]) {
-        // 既存編集で、住所欄の文字が全く変わっていない場合のみ検索をスキップ（前の値を引き継ぐ）
-        if (appData.logs[id].address === address) {
-            shouldGeocode = false;
-        }
-    }
+    let lat = null;
+    let lng = null;
 
-    let lat = (id && appData.logs[id]) ? appData.logs[id].lat : null;
-    let lng = (id && appData.logs[id]) ? appData.logs[id].lng : null;
-
-    if (shouldGeocode && address) {
+    if (address) {
         statusLabel.innerText = "⏳ 住所から位置情報を検索中...";
-        try {
-            const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
-            if (geoRes.ok) {
-                const geoData = await geoRes.json();
-                if (geoData && geoData.length > 0) {
-                    lat = parseFloat(geoData[0].lat);
-                    lng = parseFloat(geoData[0].lon);
-                } else {
-                    // 検索したけど見つからなかった場合は明示的に null に戻す
-                    lat = null;
-                    lng = null;
-                }
-            }
-        } catch (e) {
-            console.error("位置検索エラー:", e);
-        }
+        const coords = await fetchCoordinatesWithFallback(address);
+        lat = coords.lat;
+        lng = coords.lng;
     }
     
     if (!id) {
@@ -919,7 +927,7 @@ async function saveRegisteredShop() {
         id: id,
         name: name,
         address: address,
-        building: building, // 📥 データへの保存
+        building: building, 
         price: price,
         genre: genre,
         memo: memo,
@@ -932,9 +940,11 @@ async function saveRegisteredShop() {
     
     if (lat && lng) {
         map.setView([lat, lng], 15);
+        statusLabel.innerText = "✅ 反映完了。最上部の【保存】でスプシへ同期してください。";
+    } else {
+        statusLabel.innerText = "⚠️ 住所の特定に失敗したため、位置未取得のまま登録されました。【保存】は可能です。";
     }
     
-    statusLabel.innerText = "✅ 反映完了。上部の【保存】でスプシへ同期してください。";
     submitBtn.disabled = false;
     submitBtn.innerText = "登録";
     switchPage('main');
@@ -949,7 +959,7 @@ function editShop(id) {
     document.getElementById('edit-shop-id').value = shop.id;
     document.getElementById('shop-name').value = shop.name || '';
     document.getElementById('shop-address').value = shop.address || '';
-    document.getElementById('shop-building').value = shop.building || ''; // 📥 編集時にセット
+    document.getElementById('shop-building').value = shop.building || ''; 
     document.getElementById('shop-price').value = shop.price || '';
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-memo').value = shop.memo || '';
@@ -963,7 +973,7 @@ function clearForm() {
     document.getElementById('edit-shop-id').value = '';
     document.getElementById('shop-name').value = '';
     document.getElementById('shop-address').value = '';
-    document.getElementById('shop-building').value = ''; // 📥 クリア
+    document.getElementById('shop-building').value = ''; 
     document.getElementById('shop-price').value = '';
     document.getElementById('shop-genre').value = '';
     document.getElementById('shop-memo').value = '';
