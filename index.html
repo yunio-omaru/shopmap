@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (GoogleMapメイン版)</title>
+<title>自分専用飲食店マップ (自動保存対応版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -71,9 +71,9 @@ button {
     justify-content: flex-end;
     gap: 8px;
     margin-bottom: 10px;
+    flex-wrap: wrap;
 }
 
-/* 🗺️ メインメニューのGoogleマップエリア */
 .main-map-container {
     width: 100%;
     height: 350px;
@@ -90,7 +90,6 @@ button {
     border: none;
 }
 
-/* 📍 タップした店舗情報をマップ下に表示するエリア */
 .focused-shop-panel {
     background: #fff;
     border: 2px solid var(--primary-color);
@@ -103,7 +102,6 @@ button {
 .focused-shop-panel h2 { margin: 0 0 8px 0; font-size: 1.3rem; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
 .focused-shop-panel p { margin: 6px 0; font-size: 0.9rem; color: #444; }
 
-/* 📸 写真とメモの2x2グリッドレイアウト */
 .focused-media-grid { 
     display: grid; 
     grid-template-columns: repeat(2, 1fr); 
@@ -298,14 +296,19 @@ textarea.form-control { height: 80px; resize: vertical; }
     <div id="page-main" class="page active">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">📍 マイ飲食店マップ</h1>
-            <button id="btn-save" class="btn-sync" onclick="executeSave()">💾 保存</button>
+            <button id="btn-save" class="btn-sync" onclick="executeSave()">💾 手動保存</button>
         </header>
         
         <div class="menu-bar" style="position: relative;">
             <button class="btn-primary" onclick="switchPage('register')">［+登録］</button>
+            <button class="btn-secondary" onclick="toggleFilterTab('area')">［エリア］</button>
             <button class="btn-secondary" onclick="toggleFilterTab('price')">［価格帯］</button>
             <button class="btn-secondary" onclick="toggleFilterTab('genre')">［ジャンル］</button>
             
+            <div id="tab-area" class="filter-tab">
+                <div class="filter-item" onclick="setFilter('area', '')">全エリア表示</div>
+                <div id="area-filter-list"></div>
+            </div>
             <div id="tab-price" class="filter-tab">
                 <div class="filter-item" onclick="setFilter('price', '')">全表示</div>
                 <div id="price-filter-list"></div>
@@ -322,7 +325,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
 
         <div id="main-google-map" class="main-map-container">
-            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1&z=10&output=embed"></iframe>
+            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=福岡県&z=10&output=embed"></iframe>
         </div>
 
         <div id="focused-shop-panel" class="focused-shop-panel">
@@ -332,7 +335,7 @@ textarea.form-control { height: 80px; resize: vertical; }
             </h2>
             <p><strong>📍 住所:</strong> <span id="focused-address"></span> <button id="focused-app-btn" class="btn-map-app">🗺️ ナビ起動</button></p>
             <p id="focused-building-row"><strong>🏢 建物名:</strong> <span id="focused-building"></span></p>
-            <p><strong>💰 価格帯:</strong> <span id="focused-price"></span> | <strong>🏷️ ジャンル:</strong> <span id="focused-genre"></span></p>
+            <p><strong>🗺️ エリア:</strong> <span id="focused-area"></span> | <strong>💰 価格帯:</strong> <span id="focused-price"></span> | <strong>🏷️ ジャンル:</strong> <span id="focused-genre"></span></p>
             <p><strong>📝 備考:</strong> <span id="focused-memo"></span></p>
             
             <div id="focused-media-grid" class="focused-media-grid"></div>
@@ -369,6 +372,12 @@ textarea.form-control { height: 80px; resize: vertical; }
             <div class="form-group">
                 <label for="shop-building">ビル名・階数</label>
                 <input type="text" id="shop-building" class="form-control" placeholder="例) ＫＥＧＯエイトビル 2F">
+            </div>
+
+            <div class="form-group">
+                <label for="shop-area">エリア（最寄り駅・地域名）</label>
+                <input type="text" id="shop-area" class="form-control" list="area-history" placeholder="例) 新宿、天神、梅田など">
+                <datalist id="area-history"></datalist>
             </div>
             
             <div class="form-group">
@@ -413,24 +422,21 @@ const GITHUB_BRANCH = "main";
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
 
 let appData = { logs: {}, master: {} };
-let currentFilters = { price: '', genre: '' };
+let currentFilters = { area: '', price: '', genre: '' };
 let uploadedFiles = []; 
 
 document.addEventListener('DOMContentLoaded', () => {
     loadFromSpreadsheet();
 });
 
-// 一覧タップ時にマップを連動させ、下部に情報を表示するメイン機能
 function focusShop(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
     
-    // 1. Googleマップの表示をその店舗の住所に切り替え
     const mapIframe = document.getElementById('iframe-main-map');
     const searchAddress = shop.address;
     mapIframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(searchAddress)}&z=16&output=embed`;
     
-    // 2. マップ下部パネルに情報を流し込む
     document.getElementById('focused-name').innerText = shop.name;
     document.getElementById('focused-address').innerText = shop.address;
     
@@ -441,6 +447,7 @@ function focusShop(shopId) {
         document.getElementById('focused-building-row').style.display = 'none';
     }
     
+    document.getElementById('focused-area').innerText = shop.area || '未設定';
     document.getElementById('focused-price').innerText = shop.price || '未設定';
     document.getElementById('focused-genre').innerText = shop.genre || '未設定';
     document.getElementById('focused-memo').innerText = shop.memo || 'なし';
@@ -448,7 +455,6 @@ function focusShop(shopId) {
     document.getElementById('focused-edit-btn').onclick = () => editShop(shop.id);
     document.getElementById('focused-app-btn').onclick = () => openNativeMapApp(shop.address, shop.building);
     
-    // 📸 写真とメモの2x2グリッド描画処理
     const mediaGrid = document.getElementById('focused-media-grid');
     mediaGrid.innerHTML = '';
     
@@ -456,7 +462,6 @@ function focusShop(shopId) {
         shop.files.forEach(file => {
             const card = document.createElement('div');
             card.className = 'focused-media-card';
-            
             const displayMemo = file.memo ? escapeHtml(file.memo) : ' ';
             
             let mediaHtml = '';
@@ -555,7 +560,7 @@ async function executeSave() {
     } catch (e) {
         alert("保存処理でエラーが発生しました");
     } finally {
-        saveBtn.disabled = false; saveBtn.innerText = "💾 保存";
+        saveBtn.disabled = false; saveBtn.innerText = "💾 手動保存";
     }
 }
 
@@ -563,7 +568,11 @@ async function saveToSpreadsheet() {
     const statusLabel = document.getElementById('sync-status');
     statusLabel.innerText = "💾 クラウドに保存中...";
     const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
-    if (res.ok) statusLabel.innerText = "✅ スプレッドシートに保存しました！";
+    if (res.ok) {
+        statusLabel.innerText = "✅ スプレッドシートに保存しました！";
+        return true;
+    }
+    return false;
 }
 
 function scrollThumb(btn, direction) {
@@ -576,6 +585,7 @@ function scrollThumb(btn, direction) {
 }
 
 function renderApp() {
+    const uniqueAreas = new Set();
     const uniquePrices = new Set();
     const uniqueGenres = new Set();
     const listZone = document.getElementById('shop-list-zone');
@@ -586,8 +596,12 @@ function renderApp() {
     
     for (const shop of shopList) {
         if (!shop || !shop.name) continue;
+        
+        if (shop.area) uniqueAreas.add(shop.area);
         if (shop.price) uniquePrices.add(shop.price);
         if (shop.genre) uniqueGenres.add(shop.genre);
+        
+        if (currentFilters.area && shop.area !== currentFilters.area) continue;
         if (currentFilters.price && shop.price !== currentFilters.price) continue;
         if (currentFilters.genre && shop.genre !== currentFilters.genre) continue;
         
@@ -620,6 +634,7 @@ function renderApp() {
             <div class="shop-list-info">
                 <div class="shop-list-name">${escapeHtml(shop.name)}</div>
                 <div class="shop-list-meta">
+                    <span>🗺️ ${escapeHtml(shop.area || '未設定')}</span>
                     <span>💰 ${escapeHtml(shop.price || '未設定')}</span>
                     <span>🏷️ ${escapeHtml(shop.genre || '未設定')}</span>
                 </div>
@@ -633,17 +648,24 @@ function renderApp() {
     document.getElementById('shop-count').innerText = matchCount;
     if (matchCount === 0) listZone.innerHTML = `<div class="no-data-msg">該当する店舗データがありません。</div>`;
     
+    buildFilterMenu('area', uniqueAreas);
     buildFilterMenu('price', uniquePrices);
     buildFilterMenu('genre', uniqueGenres);
     
-    const datalist = document.getElementById('genre-history');
+    buildDatalist('area-history', uniqueAreas);
+    buildDatalist('genre-history', uniqueGenres);
+    
+    updateFilterBarDisplay();
+}
+
+function buildDatalist(id, dataSet) {
+    const datalist = document.getElementById(id);
     datalist.innerHTML = '';
-    for (const g of uniqueGenres) {
+    for (const val of dataSet) {
         const option = document.createElement('option');
-        option.value = g;
+        option.value = val;
         datalist.appendChild(option);
     }
-    updateFilterBarDisplay();
 }
 
 async function handleFileSelect(event) {
@@ -693,10 +715,12 @@ function renderPhotoPreviews() {
     });
 }
 
+// 💡 登録時に自動保存を実行するように機能変更
 async function saveRegisteredShop() {
     const name = document.getElementById('shop-name').value.trim();
     const address = document.getElementById('shop-address').value.trim();
     const building = document.getElementById('shop-building').value.trim(); 
+    const area = document.getElementById('shop-area').value.trim(); 
     const price = document.getElementById('shop-price').value.trim();
     const genre = document.getElementById('shop-genre').value.trim();
     const memo = document.getElementById('shop-memo').value.trim();
@@ -707,9 +731,11 @@ async function saveRegisteredShop() {
     if (uploadedFiles.length > 0 && !checkAndPromptGitHubToken()) return;
     
     const submitBtn = document.getElementById('btn-submit-shop');
-    submitBtn.disabled = true; submitBtn.innerText = "⏳ 処理中...";
-    document.getElementById('sync-status').innerText = "🚀 GitHubへ写真を保存中...";
+    submitBtn.disabled = true; submitBtn.innerText = "⏳ 保存中...";
+    const statusLabel = document.getElementById('sync-status');
+    statusLabel.innerText = "🚀 GitHubへ写真を保存中...";
     
+    // 写真のGitHubアップロード
     for (const file of uploadedFiles) {
         if (!file.isGitHubUploaded && file.data.includes(',')) {
             const cleanBase64 = file.data.split(',')[1]; 
@@ -731,9 +757,20 @@ async function saveRegisteredShop() {
     
     if (!id) id = 'shop_' + Date.now();
     
-    appData.logs[id] = { id, name, address, building, price, genre, memo, lat: null, lng: null, files: [...uploadedFiles] };
-    renderApp();
-    switchPage('main');
+    // アプリ内データの更新
+    appData.logs[id] = { id, name, address, building, area, price, genre, memo, lat: null, lng: null, files: [...uploadedFiles] };
+    
+    // 🌟 【ココが重要】店舗データを追加した直後に、自動でスプレッドシートへ強制保存を走らせる
+    statusLabel.innerText = "💾 クラウド（スプレッドシート）へ自動保存中...";
+    const isSaved = await saveToSpreadsheet();
+    
+    submitBtn.disabled = false;
+    if(isSaved) {
+        renderApp();
+        switchPage('main');
+    } else {
+        alert("スプレッドシートへの自動保存に失敗しました。もう一度登録を試すか、電波状況を確認してください。");
+    }
 }
 
 function editShop(id) {
@@ -744,6 +781,7 @@ function editShop(id) {
     document.getElementById('shop-name').value = shop.name || '';
     document.getElementById('shop-address').value = shop.address || '';
     document.getElementById('shop-building').value = shop.building || ''; 
+    document.getElementById('shop-area').value = shop.area || ''; 
     document.getElementById('shop-price').value = shop.price || '';
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-memo').value = shop.memo || '';
@@ -757,6 +795,7 @@ function clearForm() {
     document.getElementById('shop-name').value = '';
     document.getElementById('shop-address').value = '';
     document.getElementById('shop-building').value = ''; 
+    document.getElementById('shop-area').value = ''; 
     document.getElementById('shop-price').value = '';
     document.getElementById('shop-genre').value = '';
     document.getElementById('shop-memo').value = '';
@@ -777,11 +816,12 @@ function buildFilterMenu(type, elementSet) {
 }
 
 function setFilter(type, value) { currentFilters[type] = value; closeAllFilterTabs(); renderApp(); }
-function clearFilter() { currentFilters.price = ''; currentFilters.genre = ''; renderApp(); }
+function clearFilter() { currentFilters.area = ''; currentFilters.price = ''; currentFilters.genre = ''; renderApp(); }
 function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
+    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}`);
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
     if (activeTexts.length > 0) {
@@ -791,7 +831,7 @@ function updateFilterBarDisplay() {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, '&#39;');
+    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, ''');
 }
 </script>
 </body>
