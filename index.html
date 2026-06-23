@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (サムネイルGitHub保存版)</title>
+<title>自分専用飲食店マップ (福岡中心版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -325,7 +325,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
 
         <div id="main-google-map" class="main-map-container">
-            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=&z=16&output=embed"></iframe>
+            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed"></iframe>
         </div>
 
         <div id="focused-shop-panel" class="focused-shop-panel">
@@ -882,8 +882,27 @@ function buildFilterMenu(type, elementSet) {
     }
 }
 
-function setFilter(type, value) { currentFilters[type] = value; closeAllFilterTabs(); renderApp(); }
-function clearFilter() { currentFilters.area = ''; currentFilters.price = ''; currentFilters.genre = ''; renderApp(); }
+function setFilter(type, value) { 
+    currentFilters[type] = value; 
+    closeAllFilterTabs(); 
+    
+    // 💡 フィルター選択時に現在開いている店舗詳細パネルを閉じる
+    document.getElementById('focused-shop-panel').style.display = 'none';
+    // 💡 ついでにメインマップも初期位置（福岡天神）に戻す
+    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
+    
+    renderApp(); 
+}
+
+function clearFilter() { 
+    currentFilters.area = ''; 
+    currentFilters.price = ''; 
+    currentFilters.genre = ''; 
+    document.getElementById('focused-shop-panel').style.display = 'none';
+    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
+    renderApp(); 
+}
+
 function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
