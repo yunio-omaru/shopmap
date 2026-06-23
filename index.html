@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (福岡中心版)</title>
+<title>自分専用飲食店マップ (エリア連動版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -293,6 +293,7 @@ textarea.form-control { height: 80px; resize: vertical; }
 
     <div id="sync-status" class="sync-status-bar">🔄 接続確認中...</div>
 
+    <!-- 🏠 メインメニュー画面 -->
     <div id="page-main" class="page active">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">📍 マイ飲食店マップ</h1>
@@ -347,6 +348,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
     </div>
 
+    <!-- ✍️ 店舗登録画面 -->
     <div id="page-register" class="page">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">✍️ 店舗登録</h1>
@@ -375,8 +377,8 @@ textarea.form-control { height: 80px; resize: vertical; }
             </div>
 
             <div class="form-group">
-                <label for="shop-area">エリア（最寄り駅・地域名）</label>
-                <input type="text" id="shop-area" class="form-control" list="area-history" placeholder="例) 新宿、天神、梅田など">
+                <label for="shop-area">エリア（空欄なら住所から自動判別します）</label>
+                <input type="text" id="shop-area" class="form-control" list="area-history" placeholder="例) 天神、博多、大名など">
                 <datalist id="area-history"></datalist>
             </div>
             
@@ -425,9 +427,79 @@ let appData = { logs: {}, master: {} };
 let currentFilters = { area: '', price: '', genre: '' };
 let uploadedFiles = []; 
 
+// 🗺️ 近隣エリア連動用のグループ設定
+const NEIGHBOR_AREAS = {
+    "天神": ["天神", "大名", "今泉", "西中洲", "渡辺通", "舞鶴"],
+    "大名": ["大名", "天神", "今泉", "赤坂"],
+    "今泉": ["今泉", "天神", "大名", "薬院"],
+    "博多": ["博多", "博多駅前", "博多駅東", "博多駅南", "祇園", "冷泉", "住吉", "美野島"],
+    "博多駅前": ["博多", "博多駅前", "博多駅東", "祇園", "住吉"],
+    "薬院": ["薬院", "今泉", "警固", "平尾", "高砂", "白金"],
+    "西中洲": ["西中洲", "天神", "中洲", "春吉"],
+    "春吉": ["春吉", "中洲", "西中洲", "渡辺通", "高砂"]
+};
+
+// 📍 住所からエリアを自動判別するためのキーワード対応表
+const AUTO_AREA_KEYWORDS = [
+    { key: "天神", match: ["天神"] },
+    { key: "大名", match: ["大名"] },
+    { key: "今泉", match: ["今泉"] },
+    { key: "西中洲", match: ["西中洲"] },
+    { key: "春吉", match: ["春吉"] },
+    { key: "中洲", match: ["中洲"] },
+    { key: "赤坂", match: ["赤坂"] },
+    { key: "警固", match: ["警固"] },
+    { key: "薬院", match: ["薬院"] },
+    { key: "平尾", match: ["平尾"] },
+    { key: "高砂", match: ["高砂"] },
+    { key: "白金", match: ["白金"] },
+    { key: "舞鶴", match: ["舞鶴"] },
+    { key: "大手門", match: ["大手門"] },
+    { key: "荒戸", match: ["荒戸"] },
+    { key: "西新", match: ["西新"] },
+    { key: "藤崎", match: ["藤崎"] },
+    { key: "博多駅前", match: ["博多駅前"] },
+    { key: "博多駅東", match: ["博多駅東"] },
+    { key: "博多駅南", match: ["博多駅南"] },
+    { key: "祇園", match: ["祇園町", "祇園"] },
+    { key: "冷泉", match: ["冷泉"] },
+    { key: "住吉", match: ["住吉"] },
+    { key: "美野島", match: ["美野島"] },
+    { key: "博多", match: ["博多"] } 
+];
+
 document.addEventListener('DOMContentLoaded', () => {
     loadFromSpreadsheet();
 });
+
+// 住所からエリアを推測する関数
+function autoDetectArea(address) {
+    if (!address) return "";
+    for (const item of AUTO_AREA_KEYWORDS) {
+        for (const m of item.match) {
+            if (address.includes(m)) {
+                return item.key;
+            }
+        }
+    }
+    return "";
+}
+
+// エリアのフィルター条件にマッチするか判定する関数（近隣エリア対応）
+function isAreaMatch(shopArea, filterArea) {
+    if (!filterArea) return true; // フィルターなし
+    if (!shopArea) return false;
+    
+    // 完全に一致する場合
+    if (shopArea === filterArea) return true;
+    
+    // 近隣エリアのグループ定義がある場合
+    if (NEIGHBOR_AREAS[filterArea]) {
+        return NEIGHBOR_AREAS[filterArea].includes(shopArea);
+    }
+    
+    return false;
+}
 
 function focusShop(shopId) {
     const shop = appData.logs[shopId];
@@ -605,7 +677,8 @@ function renderApp() {
         if (shop.price) uniquePrices.add(shop.price);
         if (shop.genre) uniqueGenres.add(shop.genre);
         
-        if (currentFilters.area && shop.area !== currentFilters.area) continue;
+        // 💡 改良：近隣エリアも含めるカスタムマッチング判定
+        if (!isAreaMatch(shop.area, currentFilters.area)) continue;
         if (currentFilters.price && shop.price !== currentFilters.price) continue;
         if (currentFilters.genre && shop.genre !== currentFilters.genre) continue;
         
@@ -776,7 +849,7 @@ async function saveRegisteredShop() {
     const name = document.getElementById('shop-name').value.trim();
     const address = document.getElementById('shop-address').value.trim();
     const building = document.getElementById('shop-building').value.trim(); 
-    const area = document.getElementById('shop-area').value.trim(); 
+    let area = document.getElementById('shop-area').value.trim(); 
     const price = document.getElementById('shop-price').value.trim();
     const genre = document.getElementById('shop-genre').value.trim();
     const memo = document.getElementById('shop-memo').value.trim();
@@ -784,6 +857,12 @@ async function saveRegisteredShop() {
     
     if (!name) { alert("店名は必須入力です。"); return; }
     if (!address) { alert("住所は必須入力です。"); return; }
+    
+    // 💡 改良：エリアが空欄の場合、住所キーワードから自動検出を試みる
+    if (!area) {
+        area = autoDetectArea(address);
+    }
+    
     if (uploadedFiles.length > 0 && !checkAndPromptGitHubToken()) return;
     
     const submitBtn = document.getElementById('btn-submit-shop');
@@ -886,10 +965,18 @@ function setFilter(type, value) {
     currentFilters[type] = value; 
     closeAllFilterTabs(); 
     
-    // 💡 フィルター選択時に現在開いている店舗詳細パネルを閉じる
+    // 現在開いている詳細パネルを閉じる
     document.getElementById('focused-shop-panel').style.display = 'none';
-    // 💡 ついでにメインマップも初期位置（福岡天神）に戻す
-    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
+    
+    // 💡 改良：エリアフィルター選択時、マップをその地域（福岡市〇〇）に自動ズーム
+    if (type === 'area' && value) {
+        // 福岡市の主要エリアとして認識させ、Google Mapを自動スクロール＆拡大
+        const mapSearchWord = `福岡県福岡市中央区${value}`; 
+        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(mapSearchWord)}&z=15&output=embed`;
+    } else if (!currentFilters.area) {
+        // エリア指定がない、または全表示に戻した場合は天神中心に戻す
+        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
+    }
     
     renderApp(); 
 }
@@ -907,7 +994,11 @@ function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
-    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}`);
+    if (currentFilters.area) {
+        // 近隣巻き込みがある場合は明記
+        const hasNeighbors = NEIGHBOR_AREAS[currentFilters.area] ? "（近隣含む）" : "";
+        activeTexts.push(`エリア: ${currentFilters.area}${hasNeighbors}`);
+    }
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
     if (activeTexts.length > 0) {
