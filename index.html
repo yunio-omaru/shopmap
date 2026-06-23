@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ</title>
+<title>自分専用飲食店マップ (GitHub連携版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -245,7 +245,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">✍️ 店舗登録</h1>
             <div>
-                <button class="btn-sync" onclick="saveRegisteredShop()">登録</button>
+                <button class="btn-sync" id="btn-submit-shop" onclick="saveRegisteredShop()">登録</button>
                 <button class="btn-secondary" onclick="switchPage('main')">戻る</button>
             </div>
         </header>
@@ -275,7 +275,7 @@ textarea.form-control { height: 80px; resize: vertical; }
             </div>
             
             <div class="form-group">
-                <label>写真・動画（複数可、1枚ずつメモ可能）</label>
+                <label>写真・動画（GitHubへ自動アップロードされます）</label>
                 <div class="photo-upload-area" onclick="document.getElementById('file-input').click()">
                     📷 タップしてファイルを選択、またはドロップ
                     <input type="file" id="file-input" multiple accept="image/*,video/*" style="display:none;" onchange="handleFileSelect(event)">
@@ -294,6 +294,12 @@ textarea.form-control { height: 80px; resize: vertical; }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+// 🔑 【ここを毎回書き換える】GitHub自動保存用の設定
+const GITHUB_TOKEN = "ここにあなたの個人アクセストークン(PAT)を入力";
+const GITHUB_OWNER = "ここにあなたのGitHubユーザー名を入力";
+const GITHUB_REPO  = "ここにあなたのリポジトリ名を入力";
+const GITHUB_BRANCH = "main"; // デフォルトブランチ名 (通常は main または master)
+
 // 🔗 【ここを毎回書き換える】GASのWebアプリURL
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
 
@@ -307,7 +313,7 @@ let appData = {
 let map;
 let markersLayer;
 let currentFilters = { price: '', genre: '' };
-let uploadedFiles = []; // 登録画面で現在編集中の仮ファイルストリーム配列
+let uploadedFiles = []; // 登録画面で現在編集中の仮ファイル配列
 
 // 起動時の初期処理
 document.addEventListener('DOMContentLoaded', () => {
@@ -317,7 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 地図の初期化
 function initMap() {
-    // デフォルトで日本全体（仮で天神付近）を表示
     map = L.map('map-container').setView([33.5902, 130.4017], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -331,7 +336,7 @@ function switchPage(pageName) {
     document.getElementById(`page-${pageName}`).classList.add('active');
     
     if(pageName === 'main') {
-        setTimeout(() => { map.invalidateSize(); }, 200); // 地図の描画バグ防止
+        setTimeout(() => { map.invalidateSize(); }, 200);
         closeAllFilterTabs();
     } else if(pageName === 'register') {
         clearForm();
@@ -359,7 +364,6 @@ async function loadFromSpreadsheet() {
         const res = await fetch(GAS_API_URL);
         if(res.ok) {
             const data = await res.json();
-            // スプシにデータがあれば上書き、なければ初期値を維持
             if (data && Object.keys(data).length > 0) {
                 appData = data;
             }
@@ -367,7 +371,7 @@ async function loadFromSpreadsheet() {
             if (!appData.master) appData.master = {};
             
             statusLabel.innerText = "✅ 同期完了";
-            // 【AIへの目印】データ読み込み後の画面反映処理（レンダリング関数）をここに仕込む
+            // データ読み込み後の画面反映処理
             renderApp();
         }
     } catch(e) {
@@ -383,7 +387,7 @@ async function executeSave() {
     saveBtn.disabled = true; // 連打によるデータ破壊防止
     saveBtn.innerText = "⏳ 保存中...";
     try {
-        // 【AIへの目印】画面の入力値を appData に集約する処理をここに仕込む
+        // 【AIへの目印】画面の入力値を appData に集約する処理
         collectFormData();
         await saveToSpreadsheet();
     } catch (e) {
@@ -398,39 +402,32 @@ async function executeSave() {
 /*** 📝 画面の入力値をappDataに集約する
 */
 function collectFormData() {
-    // 今回は登録画面の「登録」ボタン押下時に随時 appData.logs に書き込む形式をとっているため、
-    // ここでは全体の整合性を担保するための最終チェックやダミーの整合処理を記述します。
     if (!appData.logs) appData.logs = {};
 }
 
 /*** 💻 データを画面に描写する
 */
 function renderApp() {
-    // 1. マーカーのクリア
     markersLayer.clearLayers();
     
     const uniquePrices = new Set();
     const uniqueGenres = new Set();
     
-    // ループ処理内で将来的に非同期、または厳密なデータ処理を行うため for...of 構文を使用
+    // ループ処理内で厳密にデータ集計・描画を行うため for...of 構文を使用
     const shopList = Object.values(appData.logs);
     
     for (const shop of shopList) {
         if (!shop || !shop.name) continue;
         
-        // 固有の価格帯・ジャンルを収集（フィルター用）
         if (shop.price) uniquePrices.add(shop.price);
         if (shop.genre) uniqueGenres.add(shop.genre);
         
-        // 現在のフィルター条件に合致するか検証
         if (currentFilters.price && shop.price !== currentFilters.price) continue;
         if (currentFilters.genre && shop.genre !== currentFilters.genre) continue;
         
-        // 座標がある場合はピンを立てる
         if (shop.lat && shop.lng) {
             const marker = L.marker([shop.lat, shop.lng]);
             
-            // ポップアップのHTMLを構築
             let popupHtml = `
                 <div class="popup-content">
                     <h3>${escapeHtml(shop.name)}</h3>
@@ -466,11 +463,9 @@ function renderApp() {
         }
     }
     
-    // 2. フィルター用タブメニューの動的更新
     buildFilterMenu('price', uniquePrices);
     buildFilterMenu('genre', uniqueGenres);
     
-    // 3. 登録画面用のジャンル履歴プルダウン（サジェストリスト）の更新
     const datalist = document.getElementById('genre-history');
     datalist.innerHTML = '';
     for (const g of uniqueGenres) {
@@ -479,7 +474,6 @@ function renderApp() {
         datalist.appendChild(option);
     }
     
-    // 4. アクティブなフィルターインジケータの表示制御
     updateFilterBarDisplay();
 }
 
@@ -501,32 +495,32 @@ async function saveToSpreadsheet() {
     }
 }
 
-// --- 飲食店マップ 拡張ロジック群 ---
+// --- 飲食店マップ × GitHub API 自動保存ロジック ---
 
-// ファイル選択時のBase64化およびプレースホルダー追加処理
 async function handleFileSelect(event) {
     const files = event.target.files;
     if(!files) return;
     
-    // ループ内での非同期データ読み込み（FileReader）のバグを防ぐため for...of を使用
+    // 非同期のファイルBase64変換バグを防ぐため for...of を徹底
     for (const file of files) {
         try {
             const base64Data = await convertFileToBase64(file);
             uploadedFiles.push({
                 name: file.name,
                 type: file.type,
-                data: base64Data,
-                memo: ''
+                data: base64Data, // 一時的なプレビュー用Base64データ
+                memo: '',
+                isGitHubUploaded: false, // GitHubへの反映フラグ
+                githubUrl: ''
             });
         } catch (err) {
-            console.error("ファイルの読み込みに失敗しました:", err);
+            console.error("ファイルの読み込みに失敗:", err);
         }
     }
     renderPhotoPreviews();
-    event.target.value = ''; // 連続選択可能にするためリセット
+    event.target.value = '';
 }
 
-// ファイルをBase64に変換するPromiseラッパー
 function convertFileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -536,7 +530,6 @@ function convertFileToBase64(file) {
     });
 }
 
-// 登録画面での写真・動画プレビュー描写
 function renderPhotoPreviews() {
     const container = document.getElementById('preview-zone');
     container.innerHTML = '';
@@ -547,16 +540,15 @@ function renderPhotoPreviews() {
         
         if (file.type && file.type.startsWith('video/')) {
             const video = document.createElement('video');
-            video.src = file.data;
+            video.src = file.githubUrl || file.data;
             video.controls = true;
             card.appendChild(video);
         } else {
             const img = document.createElement('img');
-            img.src = file.data;
+            img.src = file.githubUrl || file.data;
             card.appendChild(img);
         }
         
-        // メモ入力欄
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'memo-input';
@@ -565,7 +557,6 @@ function renderPhotoPreviews() {
         input.onchange = (e) => { uploadedFiles[index].memo = e.target.value; };
         card.appendChild(input);
         
-        // 削除ボタン
         const delBtn = document.createElement('button');
         delBtn.className = 'btn-del-photo';
         delBtn.innerHTML = '×';
@@ -579,7 +570,7 @@ function renderPhotoPreviews() {
     });
 }
 
-// 登録情報の保存（内部データの更新と自動マップ反映）
+// 店舗登録ボタン押下時（ここでGitHub APIを呼び出してファイルを高速コミット保存します）
 async function saveRegisteredShop() {
     const name = document.getElementById('shop-name').value.trim();
     const address = document.getElementById('shop-address').value.trim();
@@ -593,13 +584,55 @@ async function saveRegisteredShop() {
         return;
     }
     
-    const statusLabel = document.getElementById('sync-status');
-    statusLabel.innerText = "⏳ 住所から位置情報を検索中...";
+    const submitBtn = document.getElementById('btn-submit-shop');
+    submitBtn.disabled = true;
+    submitBtn.innerText = "⏳ 処理中...";
     
+    const statusLabel = document.getElementById('sync-status');
+    
+    // 1. 【核心】未アップロードの写真をGitHub APIで指定フォルダ内に保存
+    statusLabel.innerText = "🚀 GitHubリポジトリへ写真を自動保存中...";
+    
+    // ループ内で非同期API通信を行うため、厳守ルールに基づき必ず for...of 構文を使用
+    for (const file of uploadedFiles) {
+        if (!file.isGitHubUploaded && file.data.includes(',')) {
+            const cleanBase64 = file.data.split(',')[1]; // 純粋なBase64文字列
+            // フォルダパス構築: shops/Restaurant/店名/タイムスタンプ_ファイル名
+            const safePath = `shops/Restaurant/${name}/${Date.now()}_${file.name}`;
+            
+            try {
+                const ghRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${safePath}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Add shop photo: shops/Restaurant/${name}/${file.name}`,
+                        content: cleanBase64,
+                        branch: GITHUB_BRANCH
+                    })
+                });
+                
+                if (ghRes.ok) {
+                    // 保存成功したら、GitHub上のRawデータURL（直接表示用）を上書き格納
+                    file.githubUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}/${safePath}`;
+                    file.isGitHubUploaded = true;
+                    // スプシ側のデータ軽量化のため、データ本体をGitHubのURLに差し替え
+                    file.data = file.githubUrl; 
+                } else {
+                    console.error("GitHub Upload Error:", await ghRes.text());
+                }
+            } catch (err) {
+                console.error("GitHub通信エラー:", err);
+            }
+        }
+    }
+    
+    // 2. 住所から緯度経度を取得
+    statusLabel.innerText = "⏳ 住所から位置情報を検索中...";
     let lat = null;
     let lng = null;
-    
-    // 住所から緯度経度を取得（OSMのジオコーディングAPIを利用）
     if (address) {
         try {
             const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
@@ -615,18 +648,16 @@ async function saveRegisteredShop() {
         }
     }
     
-    // 新規登録ならIDを発行
     if (!id) {
         id = 'shop_' + Date.now();
     } else {
-        // 編集時の既存座標保持ロジック（住所が変わっていなければ前回の座標を維持）
         if (!lat && appData.logs[id] && appData.logs[id].address === address) {
             lat = appData.logs[id].lat;
             lng = appData.logs[id].lng;
         }
     }
     
-    // データの格納
+    // アプリデータ構造へ格納
     appData.logs[id] = {
         id: id,
         name: name,
@@ -636,22 +667,21 @@ async function saveRegisteredShop() {
         memo: memo,
         lat: lat,
         lng: lng,
-        files: [...uploadedFiles] // 配列のコピー
+        files: [...uploadedFiles]
     };
     
-    // 画面の再描写
     renderApp();
     
-    // マップの位置を新しく追加・編集したピンへ移動
     if (lat && lng) {
         map.setView([lat, lng], 15);
     }
     
-    statusLabel.innerText = "✅ 画面へ反映しました（スプシへ保存するには上部の【保存】を押してください）";
+    statusLabel.innerText = "✅ 写真をGitHubに保存し、マップへ反映しました。上部の【保存】でスプシへ同期してください。";
+    submitBtn.disabled = false;
+    submitBtn.innerText = "登録";
     switchPage('main');
 }
 
-// 既存ピンの編集処理
 function editShop(id) {
     const shop = appData.logs[id];
     if (!shop) return;
@@ -670,7 +700,6 @@ function editShop(id) {
     map.closePopup();
 }
 
-// 登録フォームクリア
 function clearForm() {
     document.getElementById('edit-shop-id').value = '';
     document.getElementById('shop-name').value = '';
@@ -682,7 +711,6 @@ function clearForm() {
     document.getElementById('preview-zone').innerHTML = '';
 }
 
-// フィルターメニューUIの構築
 function buildFilterMenu(type, elementSet) {
     const listContainer = document.getElementById(`${type}-filter-list`);
     listContainer.innerHTML = '';
@@ -697,21 +725,18 @@ function buildFilterMenu(type, elementSet) {
     }
 }
 
-// フィルター条件の設定
 function setFilter(type, value) {
     currentFilters[type] = value;
     closeAllFilterTabs();
     renderApp();
 }
 
-// フィルターの一括クリア
 function clearFilter() {
     currentFilters.price = '';
     currentFilters.genre = '';
     renderApp();
 }
 
-// フィルターバーの表示更新
 function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
@@ -728,7 +753,6 @@ function updateFilterBarDisplay() {
     }
 }
 
-// XSS対策用エスケープ
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;')
