@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (位置情報確実版)</title>
+<title>自分専用飲食店マップ (住所クレンジング版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -188,7 +188,6 @@ button {
 
 .no-data-msg { text-align: center; color: #999; padding: 30px; background: #f0f0f0; border-radius: 12px; font-size: 0.9rem; }
 
-/* 🎯 住所サジェスト用のスタイル（見やすさをさらに強化） */
 .address-suggest-wrapper {
     position: relative;
 }
@@ -204,7 +203,7 @@ button {
     max-height: 220px;
     overflow-y: auto;
     box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-    z-index: 5000; /* 地図より確実に前面に出す */
+    z-index: 5000;
     display: none;
 }
 .suggest-box.active {
@@ -225,7 +224,6 @@ button {
 .suggest-item:last-child {
     border-bottom: none;
 }
-/* 検索中・エラー通知用のスタイル */
 .suggest-status {
     padding: 10px 12px;
     font-size: 0.85rem;
@@ -379,9 +377,9 @@ textarea.form-control { height: 80px; resize: vertical; }
             </div>
             
             <div class="form-group">
-                <label for="shop-address">住所 (※候補から選択するとピンが固定されます)<span>※必須</span></label>
+                <label for="shop-address">住所 (※手動で入力して登録してもOKです)<span>※必須</span></label>
                 <div class="address-suggest-wrapper">
-                    <input type="text" id="shop-address" class="form-control" placeholder="文字を入力すると候補が出ます。例) 福岡市中央区警固" oninput="handleAddressInput(this.value)">
+                    <input type="text" id="shop-address" class="form-control" placeholder="例) 福岡市中央区平尾1丁目2-5" oninput="handleAddressInput(this.value)">
                     <div id="address-suggest-box" class="suggest-box"></div>
                 </div>
                 <input type="text" id="shop-lat" style="display:none;">
@@ -446,7 +444,6 @@ textarea.form-control { height: 80px; resize: vertical; }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-// ⚠️ 【チェック1】必ずご自身のGitHub情報を指定してください
 let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
 const GITHUB_OWNER = "ここにあなたのGitHubユーザー名を入力";
 const GITHUB_REPO  = "ここにあなたのリポジトリ名を入力";
@@ -466,7 +463,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initMap();
     loadFromSpreadsheet();
     
-    // タップでサジェスト枠を閉じる処理
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.address-suggest-wrapper')) {
             document.getElementById('address-suggest-box').classList.remove('active');
@@ -474,77 +470,61 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// 🎯 サジェスト取得処理の修正強化版
 function handleAddressInput(value) {
     const suggestBox = document.getElementById('address-suggest-box');
     const badge = document.getElementById('location-selected-badge');
     
     clearTimeout(suggestTimeout);
-    badge.style.display = 'none'; // 入力し直したら一回バッジを消す
+    badge.style.display = 'none';
     
-    // 入力が短い時は非表示
     if (!value || value.trim().length < 2) {
         suggestBox.classList.remove('active');
         return;
     }
     
-    // 入力途中は「検索中...」と出す
     suggestBox.innerHTML = '<div class="suggest-status">🔍 候補を検索中...</div>';
     suggestBox.classList.add('active');
     
     suggestTimeout = setTimeout(async () => {
-        // Nominatimのルール：一意のユーザーエージェントを付与する
-        const userAgent = "MyGourmetMapApp/7.0 (contact: map-app-owner@example.com)";
-        // 日本国内に絞って検索
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&countrycodes=jp&accept-language=ja&limit=6`;
+        const cleaned = cleanAddressString(value);
+        const userAgent = "MyGourmetMapApp/8.0 (contact: map-app-owner@example.com)";
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleaned)}&countrycodes=jp&accept-language=ja&limit=6`;
         
         try {
-            const res = await fetch(url, { 
-                method: "GET",
-                headers: { "User-Agent": userAgent } 
-            });
-            
+            const res = await fetch(url, { method: "GET", headers: { "User-Agent": userAgent } });
             if (res.ok) {
                 const data = await res.json();
-                suggestBox.innerHTML = ''; // 検索中表示をクリア
+                suggestBox.innerHTML = '';
                 
                 if (data && data.length > 0) {
                     data.forEach(item => {
                         const div = document.createElement('div');
                         div.className = 'suggest-item';
-                        // 「日本、」などの不要な国名表示をカットして綺麗にする
                         let displayName = item.display_name.replace(', Japan', '').replace('日本、', '');
                         div.innerText = displayName;
-                        
-                        // 候補をクリックしたときのイベントをバインド
                         div.onclick = (e) => {
                             e.stopPropagation();
-                            selectSuggestItem(displayName, item.lat, item.lon);
+                            selectSuggestItem(value, item.lat, item.lon);
                         };
                         suggestBox.appendChild(div);
                     });
                 } else {
-                    suggestBox.innerHTML = '<div class="suggest-status">該当する住所候補が見つかりません。別のキーワードを試してください。</div>';
+                    suggestBox.innerHTML = '<div class="suggest-status">候補が見つかりません。そのまま登録ボタンを押すと裏で自動検索します。</div>';
                 }
             } else {
-                suggestBox.innerHTML = `<div class="suggest-status suggest-error">❌ 検索サーバーエラー (ステータス:${res.status})</div>`;
+                suggestBox.classList.remove('active');
             }
         } catch (e) {
-            console.error("通信エラー:", e);
-            suggestBox.innerHTML = '<div class="suggest-status suggest-error">❌ 通信ブロックまたはオフラインです。手動で入力して登録してください。</div>';
+            suggestBox.classList.remove('active');
         }
-    }, 500); // 0.5秒タイマー
+    }, 600);
 }
 
-// 🎯 候補選択時の処理
 function selectSuggestItem(fullAddress, lat, lng) {
     document.getElementById('shop-address').value = fullAddress;
     document.getElementById('shop-lat').value = lat;
     document.getElementById('shop-lng').value = lng;
-    
-    // 成功バッジを表示
     document.getElementById('location-selected-badge').style.display = 'block';
-    // 候補枠を閉じる
     document.getElementById('address-suggest-box').classList.remove('active');
 }
 
@@ -852,17 +832,59 @@ function renderPhotoPreviews() {
     });
 }
 
-// 🎯 バックアップ用のフォールバック自動検索
+// 🎯 【新規】ご指定の住所自動整形ルールを実行するロジック
+function cleanAddressString(rawAddress) {
+    if (!rawAddress) return "";
+    
+    // 全角英数字・記号を半角に、半角カタカナを全角に統一
+    let address = rawAddress.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+    
+    // 漢数字変換用テーブル
+    const kanjiNums = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+    
+    // ルール1: 「〇丁目」が含まれている場合の処理
+    // (半角数字または全角数字) + "丁目" のパターンを検知
+    const chomeMatch = address.match(/([0-9０-９]+)\s*丁目/);
+    if (chomeMatch) {
+        const numStr = chomeMatch[1];
+        // 全角数字だった場合を考慮して半角数値に変換
+        const num = parseInt(numStr.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)), 10);
+        
+        let kanjiChome = "丁目";
+        if (num >= 1 && num <= 10) {
+            kanjiChome = kanjiNums[num] + "丁目";
+        } else {
+            kanjiChome = num + "丁目"; // 11以上はそのまま
+        }
+        
+        // 「〇丁目」までの部分を切り出し、数字部分を漢数字に差し替える
+        const chomeIndex = address.indexOf(chomeMatch[0]);
+        const beforeChome = address.substring(0, chomeIndex);
+        return beforeChome + kanjiChome; // 以降の番地等は検索除外
+    }
+    
+    // ルール2: 「丁目」がない場合、最初の数字（番地）の手前までで切り捨てる
+    const firstDigitMatch = address.match(/[0-9]/);
+    if (firstDigitMatch) {
+        return address.substring(0, firstDigitMatch.index).trim();
+    }
+    
+    return address;
+}
+
+// 🎯 バックアップ用のフォールバック自動検索（クレンジングを挟むよう改良）
 async function fetchCoordinatesWithFallback(addressStr) {
-    const userAgent = "MyGourmetMapApp/7.0 (contact: map-app-owner@example.com)";
+    const userAgent = "MyGourmetMapApp/8.0 (contact: map-app-owner@example.com)";
+    const cleanedAddress = cleanAddressString(addressStr);
+    
     try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr)}&countrycodes=jp&limit=1`;
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanedAddress)}&countrycodes=jp&limit=1`;
         const res = await fetch(url, { headers: { "User-Agent": userAgent } });
         if (res.ok) {
             const data = await res.json();
             if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("フォールバック検索エラー:", e); }
     return { lat: null, lng: null };
 }
 
@@ -875,7 +897,6 @@ async function saveRegisteredShop() {
     const memo = document.getElementById('shop-memo').value.trim();
     let id = document.getElementById('edit-shop-id').value;
     
-    // サジェスト選択、または以前の編集で取得した緯度経度
     let lat = document.getElementById('shop-lat').value ? parseFloat(document.getElementById('shop-lat').value) : null;
     let lng = document.getElementById('shop-lng').value ? parseFloat(document.getElementById('shop-lng').value) : null;
     
@@ -906,7 +927,7 @@ async function saveRegisteredShop() {
         }
     }
     
-    // 🎯 万が一サジェストが出ず、手動で入力して登録した場合は最後の砦として自動バックアップ検索を走らせる
+    // 🎯 サジェストが選択されておらず緯度経度がない場合、クレンジングを挟んだ最終検索を行う
     if (address && (!lat || !lng)) {
         document.getElementById('sync-status').innerText = "⏳ 位置情報を最終検索中...";
         const coords = await fetchCoordinatesWithFallback(address);
@@ -930,14 +951,11 @@ function editShop(id) {
     document.getElementById('shop-price').value = shop.price || '';
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-memo').value = shop.memo || '';
-    
     document.getElementById('shop-lat').value = shop.lat || '';
     document.getElementById('shop-lng').value = shop.lng || '';
-    
     if (shop.lat && shop.lng) {
         document.getElementById('location-selected-badge').style.display = 'block';
     }
-    
     uploadedFiles = shop.files ? JSON.parse(JSON.stringify(shop.files)) : [];
     renderPhotoPreviews();
     map.closePopup();
