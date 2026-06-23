@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (住所補正強化版)</title>
+<title>自分専用飲食店マップ (漢数字変換＆純正マップ連携版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -51,7 +51,8 @@ button {
 .btn-primary:hover { background-color: #357abd; }
 .btn-secondary { background-color: #e0e0e0; color: #333; }
 .btn-secondary:hover { background-color: #d0d0d0; }
-.btn-danger { background-color: var(--accent-color); color: white; }
+.btn-map-app { background-color: #ff9800; color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; margin-left: 6px; display: inline-flex; align-items: center; gap: 2px; }
+.btn-map-app:hover { background-color: #e65100; }
 
 .sync-status-bar { 
     font-size: 0.8rem; 
@@ -287,7 +288,7 @@ textarea.form-control { height: 80px; resize: vertical; }
 }
 
 .popup-content h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: var(--primary-color); }
-.popup-content p { margin: 3px 0; font-size: 0.85rem; }
+.popup-content p { margin: 4px 0; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap; }
 .popup-photos { display: flex; gap: 5px; overflow-x: auto; margin-top: 8px; padding-bottom: 5px; }
 .popup-photo-item { flex: 0 0 70px; text-align: center; }
 .popup-photo-item img, .popup-photo-item video { width: 70px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; }
@@ -322,11 +323,11 @@ textarea.form-control { height: 80px; resize: vertical; }
             <button class="btn-secondary" onclick="toggleFilterTab('genre')">［ジャンル］</button>
             
             <div id="tab-price" class="filter-tab">
-                <div class="filter-item" onclick="setFilter('price', '')">全て表示</div>
+                <div class="filter-item" onclick="setFilter('price', '')">全表示</div>
                 <div id="price-filter-list"></div>
             </div>
             <div id="tab-genre" class="filter-tab">
-                <div class="filter-item" onclick="setFilter('genre', '')">全て表示</div>
+                <div class="filter-item" onclick="setFilter('genre', '')">全表示</div>
                 <div id="genre-filter-list"></div>
             </div>
         </div>
@@ -534,6 +535,15 @@ async function executeSave() {
     }
 }
 
+// 📱 純正マップアプリを起動するためのヘルパー関数
+function openNativeMapApp(address, building) {
+    const query = encodeURIComponent(address + (building ? ' ' + building : ''));
+    // iOS (iPhone/iPad) かどうかを判別してURLスキームを切り替える
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const url = isIOS ? `maps://?q=${query}` : `geo:0,0?q=${query}`;
+    window.open(url, '_blank');
+}
+
 function renderApp() {
     markersLayer.clearLayers();
     markerObjects = {}; 
@@ -559,6 +569,8 @@ function renderApp() {
         matchCount++;
         
         const fullAddressDisplay = shop.address + (shop.building ? ' ' + shop.building : '');
+        const safeAddress = escapeHtml(shop.address || '');
+        const safeBuilding = escapeHtml(shop.building || '');
         
         if (shop.lat && shop.lng) {
             const marker = L.marker([shop.lat, shop.lng]);
@@ -566,8 +578,8 @@ function renderApp() {
             let popupHtml = `
                 <div class="popup-content">
                     <h3>${escapeHtml(shop.name)}</h3>
-                    <p><strong>📍 住所:</strong> ${escapeHtml(shop.address || '未設定')}</p>
-                    ${shop.building ? `<p><strong>🏢 建物名:</strong> ${escapeHtml(shop.building)}</p>` : ''}
+                    <p><strong>📍 住所:</strong> ${safeAddress} <button class="btn-map-app" onclick="openNativeMapApp('${safeAddress}', '${safeBuilding}')">🗺️ スマホMap</button></p>
+                    ${shop.building ? `<p><strong>🏢 建物名:</strong> ${safeBuilding}</p>` : ''}
                     <p><strong>💰 価格:</strong> ${escapeHtml(shop.price || '未設定')}</p>
                     <p><strong>🏷️ 種類:</strong> ${escapeHtml(shop.genre || '未設定')}</p>
                     <p><strong>📝 備考:</strong> ${escapeHtml(shop.memo || 'なし')}</p>
@@ -671,9 +683,12 @@ function openCustomModal(shop) {
         editShop(shop.id);
     };
     
+    const safeAddress = escapeHtml(shop.address || '');
+    const safeBuilding = escapeHtml(shop.building || '');
+    
     let bodyHtml = `
-        <p><strong>📍 住所:</strong> ${escapeHtml(shop.address || '未設定')}</p>
-        ${shop.building ? `<p><strong>🏢 建物名:</strong> ${escapeHtml(shop.building)}</p>` : ''}
+        <p><strong>📍 住所:</strong> ${safeAddress} <button class="btn-map-app" onclick="openNativeMapApp('${safeAddress}', '${safeBuilding}')">🗺️ スマホMap</button></p>
+        ${shop.building ? `<p><strong>🏢 建物名:</strong> ${safeBuilding}</p>` : ''}
         <p><strong>💰 価格:</strong> ${escapeHtml(shop.price || '未設定')}</p>
         <p><strong>🏷️ 種類:</strong> ${escapeHtml(shop.genre || '未設定')}</p>
         <p><strong>📝 備考:</strong> ${escapeHtml(shop.memo || 'なし')}</p>
@@ -792,11 +807,41 @@ function renderPhotoPreviews() {
     });
 }
 
-// 🛠️ 【機能強化】「丁目」対応フォールバックロジック
-async function fetchCoordinatesWithFallback(addressStr) {
-    const userAgent = "MyGourmetMapApp/2.0 (contact: map-app-user@example.com)";
+// 🎯 【超強化】「〇県」削除 ＆「漢数字＋丁目」100%読み替えロジック
+function convertToOpenStreetMapFormat(addressStr) {
+    if (!addressStr) return "";
     
-    // パターン①：元の住所のまま検索
+    // 1. 都道府県名（例: 福岡県、東京都など）を先頭から削除
+    let cleanAddress = addressStr.replace(/^[^\s市区町村{2,5}]+?[都道府県]/, "");
+    
+    // 2. 「数字-数字-数字」や「数字丁目」を検出し、市区町村の直後の数字を漢数字に変換
+    // 漢数字マッピングテーブル
+    const kanjiNums = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+    const toKanji = (numStr) => {
+        return numStr.split("").map(n => kanjiNums[parseInt(n)] || n).join("");
+    };
+
+    // 住所から「市区町村」の直後にある「数字」の部分を捉える正規表現
+    // 例:「福岡市中央区警固1-4-27」や「警固１丁目」など全角半角に対応
+    const chomeRegex = /(.*?[区市町村][^0-9\-\uFF10-\uFF19]+)([0-9\uFF10-\uFF19]+)(?:[-－丁番]|$)/;
+    
+    // 全角数字を半角数字に統一
+    let standardized = cleanAddress.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+    
+    const match = standardized.match(chomeRegex);
+    if (match && match[1] && match[2]) {
+        // マッチした数字の部分（例: "1"）を漢数字に変えて、後ろに強制的に「丁目」を結合
+        let kanjiChome = toKanji(match[2]) + "丁目";
+        return match[1] + kanjiChome;
+    }
+    
+    return cleanAddress; // マッチしなかった場合は県を抜いた住所をそのまま返す
+}
+
+async function fetchCoordinatesWithFallback(addressStr) {
+    const userAgent = "MyGourmetMapApp/3.0 (contact: map-app-user@example.com)";
+    
+    // まずユーザーが入力した住所を試す
     try {
         const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr)}`;
         const res = await fetch(url, { headers: { "User-Agent": userAgent } });
@@ -807,43 +852,28 @@ async function fetchCoordinatesWithFallback(addressStr) {
             }
         }
     } catch (e) {
-        console.error("第1検索エラー:", e);
+        console.error("標準検索エラー:", e);
     }
 
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    // パターン②：「〇-〇-〇」のようなハイフン表記を「〇丁目」の形式に整形して広域フォールバック
-    // 例:「福岡市中央区警固1-4-27」➔「福岡市中央区警固1丁目」に変えて検索
-    let fallbackAddress = "";
+    // 🎯 変換ロジックを適用: 「福岡県福岡市中央区警固1-4-27」➔「福岡市中央区警固一丁目」
+    const osmFormatAddress = convertToOpenStreetMapFormat(addressStr);
     
-    // 住所から「警固1-」や「警固1」の部分を抜き出して「警固1丁目」に強制変換する
-    const chomeRegex = /(.*?[区市町村][^0-9\-\uFF10-\uFF19]+)(\d+|[\uFF10-\uFF19]+)(?:[-－丁番]|$)/;
-    const match = addressStr.match(chomeRegex);
-    
-    if (match && match[1] && match[2]) {
-        // 全角数字を半角に直して「丁目」を付与
-        let num = match[2].replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-        fallbackAddress = match[1] + num + "丁目";
-    } else {
-        // 上記で拾えない場合は、市区町村の後の最初の漢字の塊まで切り詰める
-        const kanjiMatch = addressStr.match(/(.*?[区市町村].*?[\u4e00-\u9fa5]+)/);
-        if (kanjiMatch && kanjiMatch[1]) fallbackAddress = kanjiMatch[1];
-    }
-
-    if (fallbackAddress && fallbackAddress !== addressStr) {
+    if (osmFormatAddress && osmFormatAddress !== addressStr) {
         try {
-            console.log(`広域補正住所で再検索します: ${fallbackAddress}`);
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackAddress)}`;
+            console.log(`OpenStreetMap用に住所を最適化しました: [${osmFormatAddress}]`);
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(osmFormatAddress)}`;
             const res = await fetch(url, { headers: { "User-Agent": userAgent } });
             if (res.ok) {
                 const data = await res.json();
                 if (data && data.length > 0) {
-                    console.log(`補正住所 [${fallbackAddress}] でピンを生成しました。`);
+                    console.log(`最適化住所で位置特定に成功しました！`);
                     return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
                 }
             }
         } catch (e) {
-            console.error("補正住所検索エラー:", e);
+            console.error("最適化住所検索エラー:", e);
         }
     }
 
@@ -942,7 +972,7 @@ async function saveRegisteredShop() {
         map.setView([lat, lng], 15);
         statusLabel.innerText = "✅ 反映完了。最上部の【保存】でスプシへ同期してください。";
     } else {
-        statusLabel.innerText = "⚠️ 住所の特定に失敗したため、位置未取得のまま登録されました。【保存】は可能です。";
+        statusLabel.innerText = "⚠️ 位置情報が取得できませんでした。［スマホMap］ボタンをご利用ください。";
     }
     
     submitBtn.disabled = false;
