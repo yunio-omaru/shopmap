@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (GitHub連携・安全版)</title>
+<title>自分専用飲食店マップ (リスト表示追加版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -76,10 +76,85 @@ button {
 }
 #map-container {
     width: 100%;
-    height: 450px;
+    height: 400px;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     z-index: 1;
+}
+
+/* 📥 追加: 店舗リスト表示エリアのスタイル */
+.list-section-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin: 20px 0 10px 0;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.shop-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+.shop-list-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.shop-list-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    border-color: var(--primary-color);
+}
+.shop-list-info {
+    flex: 1;
+}
+.shop-list-name {
+    font-weight: bold;
+    font-size: 1.05rem;
+    color: var(--text-color);
+    margin-bottom: 4px;
+}
+.shop-list-meta {
+    font-size: 0.8rem;
+    color: #777;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+.shop-list-address {
+    font-size: 0.8rem;
+    color: #555;
+}
+.shop-list-media {
+    display: flex;
+    gap: 5px;
+    margin-left: 10px;
+}
+.shop-list-thumb {
+    width: 55px;
+    height: 55px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #eee;
+}
+.no-data-msg {
+    text-align: center;
+    color: #999;
+    padding: 30px;
+    background: #f0f0f0;
+    border-radius: 12px;
+    font-size: 0.9rem;
 }
 
 /* フィルター用ドロップダウンタブ */
@@ -239,6 +314,11 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
 
         <div id="map-container"></div>
+
+        <div class="list-section-title">📋 登録店舗一覧 (<span id="shop-count">0</span>件)</div>
+        <div id="shop-list-zone" class="shop-list-container">
+            <div class="no-data-msg">店舗データがありません。［+登録］から追加してください。</div>
+        </div>
     </div>
 
     <div id="page-register" class="page">
@@ -298,37 +378,33 @@ textarea.form-control { height: 80px; resize: vertical; }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-// 🔑 【初回起動時ポップアップで記憶するため生書き不要】GitHub自動保存用のトークン変数
 let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
 
 // ⚙️ 【ここを毎回書き換える】GitHubの環境設定
 const GITHUB_OWNER = "ここにあなたのGitHubユーザー名を入力";
 const GITHUB_REPO  = "ここにあなたのリポジトリ名を入力";
-const GITHUB_BRANCH = "main"; // デフォルトブランチ名 (通常は main または master)
+const GITHUB_BRANCH = "main"; 
 
 // 🔗 【ここを毎回書き換える】GASのWebアプリURL
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
 
-// 📦 アプリデータを一元管理する変数
 let appData = {
-    logs: {},   // 飲食店マップデータ群 (キー: 店舗ID)
-    master: {}  // 履歴データ等
+    logs: {},   
+    master: {}  
 };
 
-// 🗺️ 地図オブジェクト・マーカー管理オブジェクト・現在のフィルター状態
 let map;
 let markersLayer;
+let markerObjects = {}; // 📥 追加: リストからマーカーを呼び出すための参照用辞書
 let currentFilters = { price: '', genre: '' };
-let uploadedFiles = []; // 登録画面で現在編集中の仮ファイル配列
+let uploadedFiles = []; 
 
-// 起動時の初期処理
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
-    checkGitHubToken(); // 🔒 トークンの初回チェック
+    checkGitHubToken(); 
     loadFromSpreadsheet();
 });
 
-// トークンが保存されているか確認し、無ければ入力させる処理
 function checkGitHubToken() {
     if (!GITHUB_TOKEN) {
         const token = prompt("GitHubの「個人アクセストークン(PAT)」を入力してください（ブラウザに初回のみ安全に記憶されます）:");
@@ -336,12 +412,11 @@ function checkGitHubToken() {
             localStorage.setItem('MY_GOURMET_MAP_PAT', token.trim());
             GITHUB_TOKEN = token.trim();
         } else {
-            alert("トークンが入力されませんでした。写真のGitHub自動保存機能が動作しない可能性があります。必要に応じて登録画面下部から再設定してください。");
+            alert("トークンが入力されませんでした。");
         }
     }
 }
 
-// トークンを強制的に再設定・クリアする関数
 function resetGitHubToken() {
     const token = prompt("新しく設定するGitHubの「個人アクセストークン(PAT)」を入力してください:", GITHUB_TOKEN);
     if (token !== null) {
@@ -351,7 +426,6 @@ function resetGitHubToken() {
     }
 }
 
-// 地図の初期化
 function initMap() {
     map = L.map('map-container').setView([33.5902, 130.4017], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -360,7 +434,6 @@ function initMap() {
     markersLayer = L.layerGroup().addTo(map);
 }
 
-// ページ切り替えロジック
 function switchPage(pageName) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(`page-${pageName}`).classList.add('active');
@@ -373,7 +446,6 @@ function switchPage(pageName) {
     }
 }
 
-// フィルタータブの開閉
 function toggleFilterTab(type) {
     const tab = document.getElementById(`tab-${type}`);
     const isOpen = tab.classList.contains('active');
@@ -385,8 +457,6 @@ function closeAllFilterTabs() {
     document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
 }
 
-/*** 📥 スプレッドシートからデータを読み込む (GET)
-*/
 async function loadFromSpreadsheet() {
     const statusLabel = document.getElementById('sync-status');
     statusLabel.innerText = "🔄 スプレッドシートからデータを同期中...";
@@ -409,11 +479,9 @@ async function loadFromSpreadsheet() {
     }
 }
 
-/*** 💾 保存ボタンが押された時の安全な中継関数
-*/
 async function executeSave() {
     const saveBtn = document.getElementById('btn-save');
-    saveBtn.disabled = true; // 連打によるデータ破壊防止
+    saveBtn.disabled = true; 
     saveBtn.innerText = "⏳ 保存中...";
     try {
         collectFormData();
@@ -427,32 +495,39 @@ async function executeSave() {
     }
 }
 
-/*** 📝 画面の入力値をappDataに集約する
-*/
 function collectFormData() {
     if (!appData.logs) appData.logs = {};
 }
 
-/*** 💻 データを画面に描写する
+/*** 💻 データを画面（地図＆リスト）に描写する
 */
 function renderApp() {
     markersLayer.clearLayers();
+    markerObjects = {}; 
     
     const uniquePrices = new Set();
     const uniqueGenres = new Set();
     
-    // ループ処理内で厳密にデータ集計・描画を行うため for...of 構文を使用
-    const shopList = Object.values(appData.logs);
+    const listZone = document.getElementById('shop-list-zone');
+    listZone.innerHTML = ''; // リストのクリア
     
+    const shopList = Object.values(appData.logs);
+    let matchCount = 0;
+    
+    // ループ処理内で厳密にデータ集計・描画を行うため for...of 構文を使用
     for (const shop of shopList) {
         if (!shop || !shop.name) continue;
         
         if (shop.price) uniquePrices.add(shop.price);
         if (shop.genre) uniqueGenres.add(shop.genre);
         
+        // フィルター判定
         if (currentFilters.price && shop.price !== currentFilters.price) continue;
         if (currentFilters.genre && shop.genre !== currentFilters.genre) continue;
         
+        matchCount++;
+        
+        // ① 地図へのピン設置処理
         if (shop.lat && shop.lng) {
             const marker = L.marker([shop.lat, shop.lng]);
             
@@ -488,7 +563,49 @@ function renderApp() {
             
             marker.bindPopup(popupHtml);
             markersLayer.addLayer(marker);
+            
+            // リスト連動用にマーカーオブジェクトを保持
+            markerObjects[shop.id] = marker;
         }
+        
+        // ② 📥 追加: 下部リストカードの作成
+        const card = document.createElement('div');
+        card.className = 'shop-list-card';
+        // クリックしたらその場所にジャンプする連動設定
+        card.setAttribute('onclick', `focusShopOnMap('${shop.id}', ${shop.lat}, ${shop.lng})`);
+        
+        let mediaHtml = '';
+        if (shop.files && shop.files.length > 0) {
+            mediaHtml += `<div class="shop-list-media">`;
+            // 最大2枚までプレビュー表示
+            shop.files.slice(0, 2).forEach(f => {
+                if(f.type && f.type.startsWith('video/')) {
+                    mediaHtml += `<video class="shop-list-thumb" src="${f.data}"></video>`;
+                } else {
+                    mediaHtml += `<img class="shop-list-thumb" src="${f.data}">`;
+                }
+            });
+            mediaHtml += `</div>`;
+        }
+        
+        card.innerHTML = `
+            <div class="shop-list-info">
+                <div class="shop-list-name">${escapeHtml(shop.name)} ${(!shop.lat || !shop.lng) ? '⚠️(位置未取得)' : ''}</div>
+                <div class="shop-list-meta">
+                    <span>💰 ${escapeHtml(shop.price || '未設定')}</span>
+                    <span>🏷️ ${escapeHtml(shop.genre || '未設定')}</span>
+                </div>
+                <div class="shop-list-address">📍 ${escapeHtml(shop.address || '住所未設定')}</div>
+            </div>
+            ${mediaHtml}
+        `;
+        listZone.appendChild(card);
+    }
+    
+    // 件数カウント更新
+    document.getElementById('shop-count').innerText = matchCount;
+    if (matchCount === 0) {
+        listZone.innerHTML = `<div class="no-data-msg">該当する店舗データがありません。</div>`;
     }
     
     buildFilterMenu('price', uniquePrices);
@@ -505,8 +622,19 @@ function renderApp() {
     updateFilterBarDisplay();
 }
 
-/*** 📤 スプレッドシートへデータを書き込む (POST)
+/*** 📥 追加: リストがクリックされた時に地図を動かす関数
 */
+function focusShopOnMap(shopId, lat, lng) {
+    if (lat && lng && markerObjects[shopId]) {
+        map.setView([lat, lng], 16);
+        markerObjects[shopId].openPopup();
+        // 地図エリアまでスムーズにスクロールさせる
+        document.getElementById('map-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        alert("この店舗は位置情報（緯度経度）が登録されていないため、地図上でジャンプできません。正しい住所を入力して編集し直してください。");
+    }
+}
+
 async function saveToSpreadsheet() {
     const statusLabel = document.getElementById('sync-status');
     statusLabel.innerText = "💾 クラウドに保存中...";
@@ -522,8 +650,6 @@ async function saveToSpreadsheet() {
         statusLabel.innerText = "❌ クラウド保存エラー";
     }
 }
-
-// --- 飲食店マップ × GitHub API 自動保存ロジック ---
 
 async function handleFileSelect(event) {
     const files = event.target.files;
@@ -610,11 +736,10 @@ async function saveRegisteredShop() {
         return;
     }
     
-    // 登録ボタンを押したときにトークンが無ければ再度催促
     if (!GITHUB_TOKEN) {
         checkGitHubToken();
         if (!GITHUB_TOKEN) {
-            alert("GitHubトークンが無いため写真を保存できません。登録を中断します。");
+            alert("GitHubトークンが無いため写真を保存できません。");
             return;
         }
     }
@@ -624,9 +749,8 @@ async function saveRegisteredShop() {
     submitBtn.innerText = "⏳ 処理中...";
     
     const statusLabel = document.getElementById('sync-status');
-    statusLabel.innerText = "🚀 GitHubリポジトリへ写真を自動保存中...";
+    statusLabel.innerText = "🚀 GitHubへ写真を保存中...";
     
-    // ループ内で非同期API通信を行うため、厳守ルールに基づき必ず for...of 構文を使用
     for (const file of uploadedFiles) {
         if (!file.isGitHubUploaded && file.data.includes(',')) {
             const cleanBase64 = file.data.split(',')[1]; 
@@ -650,8 +774,6 @@ async function saveRegisteredShop() {
                     file.githubUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}/${safePath}`;
                     file.isGitHubUploaded = true;
                     file.data = file.githubUrl; 
-                } else {
-                    console.error("GitHub Upload Error:", await ghRes.text());
                 }
             } catch (err) {
                 console.error("GitHub通信エラー:", err);
@@ -673,7 +795,7 @@ async function saveRegisteredShop() {
                 }
             }
         } catch (e) {
-            console.error("ジオコーディングエラー:", e);
+            console.error("位置検索エラー:", e);
         }
     }
     
@@ -704,7 +826,7 @@ async function saveRegisteredShop() {
         map.setView([lat, lng], 15);
     }
     
-    statusLabel.innerText = "✅ 写真をGitHubに保存し、マップへ反映しました。上部の【保存】でスプシへ同期してください。";
+    statusLabel.innerText = "✅ 反映完了。上部の【保存】でスプシへ同期してください。";
     submitBtn.disabled = false;
     submitBtn.innerText = "登録";
     switchPage('main');
@@ -783,11 +905,7 @@ function updateFilterBarDisplay() {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;');
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 </script>
 </body>
