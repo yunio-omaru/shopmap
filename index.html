@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (Map直結版)</title>
+<title>自分専用飲食店マップ (GoogleMapメイン版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -50,7 +50,7 @@ button {
 .btn-primary:hover { background-color: #357abd; }
 .btn-secondary { background-color: #e0e0e0; color: #333; }
 .btn-secondary:hover { background-color: #d0d0d0; }
-.btn-map-app { background-color: #ff9800; color: white; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; }
+.btn-map-app { background-color: #ff9800; color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 2px; }
 .btn-map-app:hover { background-color: #e65100; }
 
 .sync-status-bar { 
@@ -72,6 +72,38 @@ button {
     gap: 8px;
     margin-bottom: 10px;
 }
+
+/* 🗺️ メインメニューのGoogleマップエリア */
+.main-map-container {
+    width: 100%;
+    height: 350px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    background: #e5e3df;
+    margin-bottom: 15px;
+    overflow: hidden;
+}
+.main-map-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* 📍 タップした店舗情報をマップ下に表示するエリア */
+.focused-shop-panel {
+    background: #fff;
+    border: 2px solid var(--primary-color);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    display: none; /* 初期状態は非表示 */
+}
+.focused-shop-panel h2 { margin: 0 0 8px 0; font-size: 1.3rem; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
+.focused-shop-panel p { margin: 6px 0; font-size: 0.9rem; color: #444; }
+.focused-media-zone { display: flex; gap: 8px; overflow-x: auto; margin-top: 10px; padding-bottom: 5px; }
+.focused-media-item img, .focused-media-zone video { width: 100px; height: 75px; object-fit: cover; border-radius: 6px; }
 
 .list-section-title {
     font-size: 1.1rem;
@@ -110,27 +142,30 @@ button {
 }
 .shop-list-name {
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     color: var(--text-color);
     margin-bottom: 4px;
 }
 .shop-list-meta {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: #777;
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 .shop-list-address {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .shop-list-media-wrapper {
     position: relative;
-    width: 70px;
-    height: 70px;
+    width: 65px;
+    height: 65px;
     flex-shrink: 0;
 }
 .shop-list-media-container {
@@ -145,7 +180,6 @@ button {
     background: #fafafa;
 }
 .shop-list-media-container::-webkit-scrollbar { display: none; }
-.shop-list-media-container { -ms-overflow-style: none; scrollbar-width: none; }
 .shop-list-thumb-item { flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; object-fit: cover; }
 
 .thumb-nav-btn {
@@ -160,8 +194,6 @@ button {
     height: 16px;
     padding: 0;
     font-size: 10px;
-    line-height: 16px;
-    text-align: center;
     cursor: pointer;
     z-index: 10;
 }
@@ -197,51 +229,6 @@ button {
 .preview-card .memo-input { width: 100%; font-size: 0.75rem; padding: 4px; margin-top: 5px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 4px; }
 .preview-card .btn-del-photo { position: absolute; top: 2px; right: 2px; background: rgba(255,107,107,0.9); color: white; border-radius: 50%; width: 20px; height: 20px; padding: 0; font-size: 11px; line-height: 20px; text-align: center; }
 
-/* 🗺️ プレビュー用マップのスタイル */
-.map-preview-box {
-    width: 100%;
-    height: 250px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-top: 8px;
-    background: #f0f0f0;
-}
-.map-preview-box iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 8px;
-}
-
-.custom-modal {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 6000;
-    justify-content: center;
-    align-items: center;
-}
-.custom-modal.active { display: flex; }
-.modal-content {
-    background: var(--card-bg);
-    width: 90%;
-    max-width: 500px;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    position: relative;
-    max-height: 80vh;
-    overflow-y: auto;
-}
-.modal-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; }
-
-.popup-content h3 { margin: 0 0 5px 0; font-size: 1.2rem; color: var(--primary-color); }
-.popup-content p { margin: 6px 0; font-size: 0.9rem; line-height: 1.5; }
-.popup-photos { display: flex; gap: 5px; overflow-x: auto; margin-top: 8px; padding-bottom: 5px; }
-.popup-photo-item { flex: 0 0 70px; text-align: center; }
-.popup-photo-item img, .popup-photo-item video { width: 70px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; }
-
 .filter-tab {
     display: none;
     position: absolute;
@@ -269,8 +256,6 @@ button {
 textarea.form-control { height: 80px; resize: vertical; }
 
 .active-filter-indicator { background: #e3f2fd; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; display: none; justify-content: space-between; align-items: center; }
-.map-switch-btns { display: flex; gap: 5px; margin-top: 5px; }
-.map-switch-btns button { padding: 4px 10px; font-size: 0.8rem; }
 </style>
 </head>
 <body>
@@ -278,6 +263,7 @@ textarea.form-control { height: 80px; resize: vertical; }
 
     <div id="sync-status" class="sync-status-bar">🔄 接続確認中...</div>
 
+    <!-- 🏠 メインメニュー画面 -->
     <div id="page-main" class="page active">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">📍 マイ飲食店マップ</h1>
@@ -304,12 +290,31 @@ textarea.form-control { height: 80px; resize: vertical; }
             <button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="clearFilter()">解除</button>
         </div>
 
+        <!-- 🗺️ 【新規】メイン画面のGoogleマップ表示 -->
+        <div id="main-google-map" class="main-map-container">
+            <iframe id="iframe-main-map" src="https://maps.google.com/maps?output=embed&q=福岡県福岡市中央区&z=13"></iframe>
+        </div>
+
+        <!-- 🎯 【新規】タップされた店舗の情報をここに表示 -->
+        <div id="focused-shop-panel" class="focused-shop-panel">
+            <h2>
+                <span id="focused-name">店名</span>
+                <button id="focused-edit-btn" class="btn-secondary" style="padding:4px 10px; font-size:0.8rem;">編集</button>
+            </h2>
+            <p><strong>📍 住所:</strong> <span id="focused-address"></span> <button id="focused-app-btn" class="btn-map-app">🗺️ ナビ起動</button></p>
+            <p id="focused-building-row"><strong>🏢 建物名:</strong> <span id="focused-building"></span></p>
+            <p><strong>💰 価格帯:</strong> <span id="focused-price"></span> | <strong>🏷️ ジャンル:</strong> <span id="focused-genre"></span></p>
+            <p><strong>📝 備考:</strong> <span id="focused-memo"></span></p>
+            <div id="focused-media-zone" class="focused-media-zone"></div>
+        </div>
+
         <div class="list-section-title">📋 登録店舗一覧 (<span id="shop-count">0</span>件)</div>
         <div id="shop-list-zone" class="shop-list-container">
             <div class="no-data-msg">店舗データがありません。［+登録］から追加してください。</div>
         </div>
     </div>
 
+    <!-- ✍️ 店舗登録画面 -->
     <div id="page-register" class="page">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">✍️ 店舗登録</h1>
@@ -329,16 +334,7 @@ textarea.form-control { height: 80px; resize: vertical; }
             
             <div class="form-group">
                 <label for="shop-address">住所<span>※必須</span></label>
-                <input type="text" id="shop-address" class="form-control" placeholder="例) 福岡市中央区平尾1丁目2-5" onchange="updatePreviewMap()">
-                
-                <div class="map-switch-btns">
-                    <button type="button" class="btn-secondary" onclick="changePreviewMapType('google')">GoogleMap表示</button>
-                    <button type="button" class="btn-secondary" onclick="changePreviewMapType('apple')">AppleMap表示</button>
-                </div>
-                
-                <div id="map-preview-container" class="map-preview-box">
-                    <div style="text-align:center; padding-top:100px; color:#999; font-size:0.9rem;">住所を入力するとここにマップがプレビュー表示されます</div>
-                </div>
+                <input type="text" id="shop-address" class="form-control" placeholder="例) 福岡市中央区平尾1丁目2-5">
             </div>
 
             <div class="form-group">
@@ -379,23 +375,10 @@ textarea.form-control { height: 80px; resize: vertical; }
 
 </div>
 
-<div id="custom-modal-area" class="custom-modal" onclick="closeCustomModal(event)">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <h3 id="modal-shop-name" style="margin:0; font-size:1.3rem; color: var(--primary-color);">店名</h3>
-            <button id="modal-edit-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;">編集</button>
-        </div>
-        <div id="modal-shop-body" class="popup-content"></div>
-        <div style="text-align: right; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-            <button class="btn-secondary" onclick="closeCustomModal(null)">閉じる</button>
-        </div>
-    </div>
-</div>
-
 <script>
 let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
-const GITHUB_OWNER = "ここにあなたのGitHubユーザー名を入力";
-const GITHUB_REPO  = "ここにあなたのリポジトリ名を入力";
+const GITHUB_OWNER = "yunio-omaru";
+const GITHUB_REPO  = "shopmap";
 const GITHUB_BRANCH = "main"; 
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
@@ -403,29 +386,68 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnR
 let appData = { logs: {}, master: {} };
 let currentFilters = { price: '', genre: '' };
 let uploadedFiles = []; 
-let currentMapProvider = "google"; // デフォルトはGoogle
 
 document.addEventListener('DOMContentLoaded', () => {
     loadFromSpreadsheet();
 });
 
-// 🗺️ 画面内マッププレビューの表示更新
-function updatePreviewMap() {
-    const address = document.getElementById('shop-address').value.trim();
-    const container = document.getElementById('map-preview-container');
-    if (!address) return;
-
-    if (currentMapProvider === "google") {
-        container.innerHTML = `<iframe src="https://maps.google.com/maps?output=embed&q=${encodeURIComponent(address)}&z=16"></iframe>`;
+// 🎯 【新規】一覧タップ時にマップを連動させ、下部に情報を表示するメイン機能
+function focusShop(shopId) {
+    const shop = appData.logs[shopId];
+    if (!shop) return;
+    
+    // 1. Googleマップの表示をその店舗の住所に切り替え（自動ピン留め状態）
+    const mapIframe = document.getElementById('iframe-main-map');
+    const searchAddress = shop.address;
+    mapIframe.src = `https://maps.google.com/maps?output=embed&q=${encodeURIComponent(searchAddress)}&z=16`;
+    
+    // 2. マップ下部パネルに情報を流し込む
+    document.getElementById('focused-name').innerText = shop.name;
+    document.getElementById('focused-address').innerText = shop.address;
+    
+    if (shop.building) {
+        document.getElementById('focused-building-row').style.display = 'block';
+        document.getElementById('focused-building').innerText = shop.building;
     } else {
-        // AppleマップWeb（DuckDuckGo経由のセキュアなマップ埋め込み）
-        container.innerHTML = `<iframe src="https://duckduckgo.com/?q=${encodeURIComponent(address)}&iaxm=maps"></iframe>`;
+        document.getElementById('focused-building-row').style.display = 'none';
     }
+    
+    document.getElementById('focused-price').innerText = shop.price || '未設定';
+    document.getElementById('focused-genre').innerText = shop.genre || '未設定';
+    document.getElementById('focused-memo').innerText = shop.memo || 'なし';
+    
+    // 編集ボタン・ナビボタンの動作割り当て
+    document.getElementById('focused-edit-btn').onclick = () => editShop(shop.id);
+    document.getElementById('focused-app-btn').onclick = () => openNativeMapApp(shop.address, shop.building);
+    
+    // メディア（写真・動画）の描画
+    const mediaZone = document.getElementById('focused-media-zone');
+    mediaZone.innerHTML = '';
+    if (shop.files && shop.files.length > 0) {
+        shop.files.forEach(file => {
+            const div = document.createElement('div');
+            div.className = 'focused-media-item';
+            if (file.type && file.type.startsWith('video/')) {
+                div.innerHTML = `<video src="${file.data}" controls></video>`;
+            } else {
+                div.innerHTML = `<img src="${file.data}" onclick="window.open('${file.data}')">`;
+            }
+            mediaZone.appendChild(div);
+        });
+        mediaZone.style.display = 'flex';
+    } else {
+        mediaZone.style.display = 'none';
+    }
+    
+    // パネルを表示化し、画面を上部へスムーズスクロール
+    document.getElementById('focused-shop-panel').style.display = 'block';
+    document.getElementById('main-google-map').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function changePreviewMapType(type) {
-    currentMapProvider = type;
-    updatePreviewMap();
+function openNativeMapApp(address, building) {
+    const query = encodeURIComponent(address + (building ? ' ' + building : ''));
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    window.open(isIOS ? `maps://?q=${query}` : `https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
 }
 
 function checkAndPromptGitHubToken() {
@@ -500,10 +522,11 @@ async function executeSave() {
     }
 }
 
-function openNativeMapApp(address, building) {
-    const query = encodeURIComponent(address + (building ? ' ' + building : ''));
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    window.open(isIOS ? `maps://?q=${query}` : `https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+async function saveToSpreadsheet() {
+    const statusLabel = document.getElementById('sync-status');
+    statusLabel.innerText = "💾 クラウドに保存中...";
+    const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
+    if (res.ok) statusLabel.innerText = "✅ スプレッドシートに保存しました！";
 }
 
 function scrollThumb(btn, direction) {
@@ -536,7 +559,8 @@ function renderApp() {
         
         const card = document.createElement('div');
         card.className = 'shop-list-card';
-        card.setAttribute('onclick', `openCustomModalById('${shop.id}')`);
+        // タップ時に新設したfocusShop関数を呼び出す
+        card.setAttribute('onclick', `focusShop('${shop.id}')`);
         
         let mediaWrapperHtml = '';
         if (shop.files && shop.files.length > 0) {
@@ -584,56 +608,6 @@ function renderApp() {
         datalist.appendChild(option);
     }
     updateFilterBarDisplay();
-}
-
-function openCustomModalById(shopId) {
-    const shop = appData.logs[shopId];
-    if (shop) openCustomModal(shop);
-}
-
-function openCustomModal(shop) {
-    document.getElementById('modal-shop-name').innerText = shop.name;
-    const editBtn = document.getElementById('modal-edit-btn');
-    editBtn.onclick = () => { closeCustomModal(null); editShop(shop.id); };
-    
-    const safeAddress = escapeHtml(shop.address || '');
-    const safeBuilding = escapeHtml(shop.building || '');
-    let bodyHtml = `
-        <p style="margin-bottom:15px;"><button class="btn-map-app" onclick="openNativeMapApp('${safeAddress}', '${safeBuilding}')">🗺️ 地図アプリで開く (Google/iOS自動判別)</button></p>
-        <p><strong>📍 住所:</strong> ${safeAddress}</p>
-        ${shop.building ? `<p><strong>🏢 建物名:</strong> ${safeBuilding}</p>` : ''}
-        <p><strong>💰 価格:</strong> ${escapeHtml(shop.price || '未設定')}</p>
-        <p><strong>🏷️ 種類:</strong> ${escapeHtml(shop.genre || '未設定')}</p>
-        <p><strong>📝 備考:</strong> ${escapeHtml(shop.memo || 'なし')}</p>
-    `;
-    if (shop.files && shop.files.length > 0) {
-        bodyHtml += `<div class="popup-photos">`;
-        for (const file of shop.files) {
-            bodyHtml += `<div class="popup-photo-item">`;
-            if (file.type && file.type.startsWith('video/')) {
-                bodyHtml += `<video src="${file.data}" controls></video>`;
-            } else {
-                bodyHtml += `<img src="${file.data}" onclick="window.open('${file.data}')">`;
-            }
-            bodyHtml += `</div>`;
-        }
-        bodyHtml += `</div>`;
-    }
-    document.getElementById('modal-shop-body').innerHTML = bodyHtml;
-    document.getElementById('custom-modal-area').classList.add('active');
-}
-
-function closeCustomModal(e) {
-    if (e === null || e.target === document.getElementById('custom-modal-area')) {
-        document.getElementById('custom-modal-area').classList.remove('active');
-    }
-}
-
-async function saveToSpreadsheet() {
-    const statusLabel = document.getElementById('sync-status');
-    statusLabel.innerText = "💾 クラウドに保存中...";
-    const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
-    if (res.ok) statusLabel.innerText = "✅ スプレッドシートに保存しました！";
 }
 
 async function handleFileSelect(event) {
@@ -738,8 +712,6 @@ function editShop(id) {
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-memo').value = shop.memo || '';
     
-    updatePreviewMap();
-    
     uploadedFiles = shop.files ? JSON.parse(JSON.stringify(shop.files)) : [];
     renderPhotoPreviews();
 }
@@ -752,7 +724,6 @@ function clearForm() {
     document.getElementById('shop-price').value = '';
     document.getElementById('shop-genre').value = '';
     document.getElementById('shop-memo').value = '';
-    document.getElementById('map-preview-container').innerHTML = `<div style="text-align:center; padding-top:100px; color:#999; font-size:0.9rem;">住所を入力するとここにマップがプレビュー表示されます</div>`;
     uploadedFiles = [];
     document.getElementById('preview-zone').innerHTML = '';
 }
