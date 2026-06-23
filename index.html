@@ -103,7 +103,7 @@ button {
 .focused-shop-panel h2 { margin: 0 0 8px 0; font-size: 1.3rem; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
 .focused-shop-panel p { margin: 6px 0; font-size: 0.9rem; color: #444; }
 
-/* 📸 【リニューアル】2x2の写真グリッドレイアウト */
+/* 📸 写真とメモの2x2グリッドレイアウト */
 .focused-media-grid { 
     display: grid; 
     grid-template-columns: repeat(2, 1fr); 
@@ -131,7 +131,7 @@ button {
 }
 .focused-media-card img, .focused-media-card video { 
     width: 100%; 
-    height: 140px; /* 写真を大きく表示 */
+    height: 140px; 
     object-fit: cover; 
     border-radius: 6px; 
     cursor: pointer;
@@ -322,7 +322,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
 
         <div id="main-google-map" class="main-map-container">
-            <iframe id="iframe-main-map" src="https://maps.google.com/maps?output=embed&q=福岡県福岡市中央区&z=13"></iframe>
+            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1&z=10&output=embed"></iframe>
         </div>
 
         <div id="focused-shop-panel" class="focused-shop-panel">
@@ -428,7 +428,7 @@ function focusShop(shopId) {
     // 1. Googleマップの表示をその店舗の住所に切り替え
     const mapIframe = document.getElementById('iframe-main-map');
     const searchAddress = shop.address;
-    mapIframe.src = `https://maps.google.com/maps?output=embed&q=${encodeURIComponent(searchAddress)}&z=16`;
+    mapIframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(searchAddress)}&z=16&output=embed`;
     
     // 2. マップ下部パネルに情報を流し込む
     document.getElementById('focused-name').innerText = shop.name;
@@ -448,7 +448,7 @@ function focusShop(shopId) {
     document.getElementById('focused-edit-btn').onclick = () => editShop(shop.id);
     document.getElementById('focused-app-btn').onclick = () => openNativeMapApp(shop.address, shop.building);
     
-    // 📸 【リニューアル】写真とメモの2x2グリッド描画処理
+    // 📸 写真とメモの2x2グリッド描画処理
     const mediaGrid = document.getElementById('focused-media-grid');
     mediaGrid.innerHTML = '';
     
@@ -457,7 +457,6 @@ function focusShop(shopId) {
             const card = document.createElement('div');
             card.className = 'focused-media-card';
             
-            // 写真メモ（未入力の場合は空白）
             const displayMemo = file.memo ? escapeHtml(file.memo) : ' ';
             
             let mediaHtml = '';
@@ -467,7 +466,6 @@ function focusShop(shopId) {
                 mediaHtml = `<img src="${file.data}" onclick="window.open('${file.data}')">`;
             }
             
-            // メモが上、写真が下に配置される構造
             card.innerHTML = `
                 <div class="focused-media-memo">💬 ${displayMemo}</div>
                 ${mediaHtml}
@@ -486,7 +484,7 @@ function focusShop(shopId) {
 function openNativeMapApp(address, building) {
     const query = encodeURIComponent(address + (building ? ' ' + building : ''));
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    window.open(isIOS ? `maps://?q=${query}` : `https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+    window.open(isIOS ? `maps://?q=${query}` : `https://maps.google.com/maps?q=${query}`, '_blank');
 }
 
 function checkAndPromptGitHubToken() {
@@ -793,7 +791,7 @@ function updateFilterBarDisplay() {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, ''');
+    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, '&#39;');
 }
 </script>
 </body>
