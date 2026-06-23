@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (住所候補選択版)</title>
+<title>自分専用飲食店マップ (サムネ改善版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -97,6 +97,8 @@ button {
     gap: 10px;
     margin-top: 10px;
 }
+
+/* 🎯 一覧用カードのレイアウト最適化 */
 .shop-list-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -108,6 +110,7 @@ button {
     box-shadow: 0 2px 6px rgba(0,0,0,0.02);
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
+    gap: 10px;
 }
 .shop-list-card:hover {
     transform: translateY(-2px);
@@ -116,12 +119,16 @@ button {
 }
 .shop-list-info {
     flex: 1;
+    min-width: 0; /* 文字あふれ防止 */
 }
 .shop-list-name {
     font-weight: bold;
     font-size: 1.05rem;
     color: var(--text-color);
     margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .shop-list-meta {
     font-size: 0.8rem;
@@ -134,9 +141,77 @@ button {
 .shop-list-address {
     font-size: 0.8rem;
     color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* 🎯 住所サジェスト用のスタイル定義 */
+/* 🎯 サムネ画像表示エリアのコンパクト化とスライダー対応 */
+.shop-list-media-wrapper {
+    position: relative;
+    width: 65px;
+    height: 65px;
+    flex-shrink: 0;
+}
+.shop-list-media-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    background: #fafafa;
+}
+/* スクロールバーを非表示にする（すっきり見せるため） */
+.shop-list-media-container::-webkit-scrollbar {
+    display: none;
+}
+.shop-list-media-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.shop-list-thumb-item {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    scroll-snap-align: start;
+    object-fit: cover;
+}
+
+/* 複数画像がある場合の切り替え矢印ナビ */
+.thumb-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.4);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    cursor: pointer;
+    z-index: 10;
+    font-weight: normal;
+}
+.thumb-nav-prev { left: 2px; }
+.thumb-nav-next { right: 2px; }
+
+.no-data-msg {
+    text-align: center;
+    color: #999;
+    padding: 30px;
+    background: #f0f0f0;
+    border-radius: 12px;
+    font-size: 0.9rem;
+}
+
+/* 住所サジェスト用のスタイル定義 */
 .address-suggest-wrapper {
     position: relative;
 }
@@ -443,10 +518,10 @@ textarea.form-control { height: 80px; resize: vertical; }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+// ⚠️ ご自身の情報を必ず指定してください
 let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
-
-const GITHUB_OWNER = "yunio-omaru";
-const GITHUB_REPO  = "shopmap";
+const GITHUB_OWNER = "ここにあなたのGitHubユーザー名を入力";
+const GITHUB_REPO  = "ここにあなたのリポジトリ名を入力";
 const GITHUB_BRANCH = "main"; 
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
@@ -457,13 +532,12 @@ let markersLayer;
 let markerObjects = {}; 
 let currentFilters = { price: '', genre: '' };
 let uploadedFiles = []; 
-let suggestTimeout = null; // 入力タイマー用
+let suggestTimeout = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
     loadFromSpreadsheet();
     
-    // サジェストボックス以外をクリックした時にボックスを閉じる処理
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.address-suggest-wrapper')) {
             document.getElementById('address-suggest-box').classList.remove('active');
@@ -471,11 +545,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// 🎯 リアルタイムの住所入力＆サジェスト取得
 function handleAddressInput(value) {
     const suggestBox = document.getElementById('address-suggest-box');
-    
-    // 毎回入力するたびに即時リクエストするとサーバーに負荷がかかるため、入力が止まって300ms後に検索する
     clearTimeout(suggestTimeout);
     
     if (!value || value.trim().length < 3) {
@@ -486,7 +557,6 @@ function handleAddressInput(value) {
     suggestTimeout = setTimeout(async () => {
         const userAgent = "MyGourmetMapApp/6.0 (contact: map-app-user@example.com)";
         try {
-            // 日本国内（countrycodes=jp）かつ日本語優先（accept-language=ja）で検索候補を取得
             const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&countrycodes=jp&accept-language=ja&limit=5`;
             const res = await fetch(url, { headers: { "User-Agent": userAgent } });
             if (res.ok) {
@@ -497,10 +567,10 @@ function handleAddressInput(value) {
                         const div = document.createElement('div');
                         div.className = 'suggest-item';
                         div.innerText = item.display_name.replace(', Japan', '').replace('日本、', '');
-                        // クリックした際に住所と緯度経度を自動セットする
                         div.onclick = () => selectSuggestItem(div.innerText, item.lat, item.lon);
                         suggestBox.appendChild(div);
                     });
+                    suggestBox.appendChild(div);
                     suggestBox.classList.add('active');
                 } else {
                     suggestBox.classList.remove('active');
@@ -512,30 +582,22 @@ function handleAddressInput(value) {
     }, 400);
 }
 
-// 🎯 候補が選ばれた際の処理
 function selectSuggestItem(fullAddress, lat, lng) {
-    // 表示を綺麗にするために「市区町村」より前の「郵便番号や国名」の余計な表記があれば簡易トリミング
-    let cleanAddress = fullAddress.trim();
-    
-    document.getElementById('shop-address').value = cleanAddress;
+    document.getElementById('shop-address').value = fullAddress.trim();
     document.getElementById('shop-lat').value = lat;
     document.getElementById('shop-lng').value = lng;
-    
-    // 候補ボックスを隠す
     document.getElementById('address-suggest-box').classList.remove('active');
 }
 
 function checkAndPromptGitHubToken() {
     if (!GITHUB_TOKEN) {
-        const token = prompt("GitHubの「個人アクセストークン(PAT)」を入力してください（写真の保存に必要です。ブラウザに安全に記憶されます）:");
+        const token = prompt("GitHubの「個人アクセストークン(PAT)」を入力してください（ブラウザに記憶されます）:");
         if (token && token.trim() !== "") {
             localStorage.setItem('MY_GOURMET_MAP_PAT', token.trim());
             GITHUB_TOKEN = token.trim();
             return true;
-        } else {
-            alert("トークンが入力されませんでした。");
-            return false;
         }
+        return false;
     }
     return true;
 }
@@ -560,7 +622,6 @@ function initMap() {
 function switchPage(pageName) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(`page-${pageName}`).classList.add('active');
-    
     if(pageName === 'main') {
         setTimeout(() => { map.invalidateSize(); }, 200);
         closeAllFilterTabs();
@@ -587,51 +648,49 @@ async function loadFromSpreadsheet() {
         const res = await fetch(GAS_API_URL);
         if(res.ok) {
             const data = await res.json();
-            if (data && Object.keys(data).length > 0) {
-                appData = data;
-            }
+            if (data && Object.keys(data).length > 0) appData = data;
             if (!appData.logs) appData.logs = {};
-            if (!appData.master) appData.master = {};
-            
             statusLabel.innerText = "✅ 同期完了";
             renderApp();
         }
     } catch(e) {
-        console.error(e);
         statusLabel.innerText = "❌ 読み込み同期エラー";
     }
 }
 
 async function executeSave() {
     const saveBtn = document.getElementById('btn-save');
-    saveBtn.disabled = true; 
-    saveBtn.innerText = "⏳ 保存中...";
+    saveBtn.disabled = true; saveBtn.innerText = "⏳ 保存中...";
     try {
-        if (!appData.logs) appData.logs = {};
         await saveToSpreadsheet();
     } catch (e) {
-        console.error(e);
         alert("保存処理でエラーが発生しました");
     } finally {
-        saveBtn.disabled = false;
-        saveBtn.innerText = "💾 保存";
+        saveBtn.disabled = false; saveBtn.innerText = "💾 保存";
     }
 }
 
 function openNativeMapApp(address, building) {
     const query = encodeURIComponent(address + (building ? ' ' + building : ''));
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const url = isIOS ? `maps://?q=${query}` : `geo:0,0?q=${query}`;
-    window.open(url, '_blank');
+    window.open(isIOS ? `maps://?q=${query}` : `geo:0,0?q=${query}`, '_blank');
+}
+
+// 🎯 サムネスライダーの切り替え用JavaScript
+function scrollThumb(btn, direction) {
+    event.stopPropagation(); // カードクリックの地図移動イベントを止める
+    const container = btn.parentElement.querySelector('.shop-list-media-container');
+    if(container) {
+        const width = container.clientWidth;
+        container.scrollBy({ left: direction * width, behavior: 'smooth' });
+    }
 }
 
 function renderApp() {
     markersLayer.clearLayers();
     markerObjects = {}; 
-    
     const uniquePrices = new Set();
     const uniqueGenres = new Set();
-    
     const listZone = document.getElementById('shop-list-zone');
     listZone.innerHTML = ''; 
     
@@ -640,22 +699,18 @@ function renderApp() {
     
     for (const shop of shopList) {
         if (!shop || !shop.name) continue;
-        
         if (shop.price) uniquePrices.add(shop.price);
         if (shop.genre) uniqueGenres.add(shop.genre);
-        
         if (currentFilters.price && shop.price !== currentFilters.price) continue;
         if (currentFilters.genre && shop.genre !== currentFilters.genre) continue;
         
         matchCount++;
-        
         const fullAddressDisplay = shop.address + (shop.building ? ' ' + shop.building : '');
         const safeAddress = escapeHtml(shop.address || '');
         const safeBuilding = escapeHtml(shop.building || '');
         
         if (shop.lat && shop.lng) {
             const marker = L.marker([shop.lat, shop.lng]);
-            
             let popupHtml = `
                 <div class="popup-content">
                     <h3>${escapeHtml(shop.name)}</h3>
@@ -665,7 +720,6 @@ function renderApp() {
                     <p><strong>🏷️ 種類:</strong> ${escapeHtml(shop.genre || '未設定')}</p>
                     <p><strong>📝 備考:</strong> ${escapeHtml(shop.memo || 'なし')}</p>
             `;
-            
             if (shop.files && shop.files.length > 0) {
                 popupHtml += `<div class="popup-photos">`;
                 for (const file of shop.files) {
@@ -673,19 +727,13 @@ function renderApp() {
                     if (file.type && file.type.startsWith('video/')) {
                         popupHtml += `<video src="${file.data}" controls></video>`;
                     } else {
-                        popupHtml += `<img src="${file.data}" onclick="window.open('${file.data}')" title="クリックで拡大">`;
+                        popupHtml += `<img src="${file.data}" onclick="window.open('${file.data}')">`;
                     }
                     popupHtml += `</div>`;
                 }
                 popupHtml += `</div>`;
             }
-            
-            popupHtml += `
-                <div style="margin-top:8px; text-align:right;">
-                    <button class="btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="editShop('${shop.id}')">編集</button>
-                </div>
-            </div>`;
-            
+            popupHtml += `<div style="margin-top:8px; text-align:right;"><button class="btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="editShop('${shop.id}')">編集</button></div></div>`;
             marker.bindPopup(popupHtml);
             markersLayer.addLayer(marker);
             markerObjects[shop.id] = marker;
@@ -695,17 +743,26 @@ function renderApp() {
         card.className = 'shop-list-card';
         card.setAttribute('onclick', `focusShopOnMap('${shop.id}', ${shop.lat}, ${shop.lng})`);
         
-        let mediaHtml = '';
+        // 🎯 複数画像がある場合、スワイプ・クリックで切り替え可能なコンパクトスライダーを構築
+        let mediaWrapperHtml = '';
         if (shop.files && shop.files.length > 0) {
-            mediaHtml += `<div class="shop-list-media">`;
-            shop.files.slice(0, 2).forEach(f => {
+            mediaWrapperHtml += `<div class="shop-list-media-wrapper">`;
+            
+            // 複数画像があるときだけナビ用の小さな矢印を表示
+            if (shop.files.length > 1) {
+                mediaWrapperHtml += `<button class="thumb-nav-btn thumb-nav-prev" onclick="scrollThumb(this, -1)">◀</button>`;
+                mediaWrapperHtml += `<button class="thumb-nav-btn thumb-nav-next" onclick="scrollThumb(this, 1)">▶</button>`;
+            }
+            
+            mediaWrapperHtml += `<div class="shop-list-media-container">`;
+            shop.files.forEach(f => {
                 if(f.type && f.type.startsWith('video/')) {
-                    mediaHtml += `<video class="shop-list-thumb" src="${f.data}"></video>`;
+                    mediaWrapperHtml += `<video class="shop-list-thumb-item" src="${f.data}"></video>`;
                 } else {
-                    mediaHtml += `<img class="shop-list-thumb" src="${f.data}">`;
+                    mediaWrapperHtml += `<img class="shop-list-thumb-item" src="${f.data}">`;
                 }
             });
-            mediaHtml += `</div>`;
+            mediaWrapperHtml += `</div></div>`;
         }
         
         card.innerHTML = `
@@ -717,15 +774,13 @@ function renderApp() {
                 </div>
                 <div class="shop-list-address">📍 ${escapeHtml(fullAddressDisplay || '住所未設定')}</div>
             </div>
-            ${mediaHtml}
+            ${mediaWrapperHtml}
         `;
         listZone.appendChild(card);
     }
     
     document.getElementById('shop-count').innerText = matchCount;
-    if (matchCount === 0) {
-        listZone.innerHTML = `<div class="no-data-msg">該当する店舗データがありません。</div>`;
-    }
+    if (matchCount === 0) listZone.innerHTML = `<div class="no-data-msg">該当する店舗データがありません。</div>`;
     
     buildFilterMenu('price', uniquePrices);
     buildFilterMenu('genre', uniqueGenres);
@@ -737,14 +792,12 @@ function renderApp() {
         option.value = g;
         datalist.appendChild(option);
     }
-    
     updateFilterBarDisplay();
 }
 
 function focusShopOnMap(shopId, lat, lng) {
     const shop = appData.logs[shopId];
     if (!shop) return;
-
     if (lat && lng && markerObjects[shopId]) {
         map.setView([lat, lng], 16);
         markerObjects[shopId].openPopup();
@@ -756,16 +809,11 @@ function focusShopOnMap(shopId, lat, lng) {
 
 function openCustomModal(shop) {
     document.getElementById('modal-shop-name').innerText = shop.name;
-    
     const editBtn = document.getElementById('modal-edit-btn');
-    editBtn.onclick = () => {
-        closeCustomModal(null);
-        editShop(shop.id);
-    };
+    editBtn.onclick = () => { closeCustomModal(null); editShop(shop.id); };
     
     const safeAddress = escapeHtml(shop.address || '');
     const safeBuilding = escapeHtml(shop.building || '');
-    
     let bodyHtml = `
         <p><strong>📍 住所:</strong> ${safeAddress} <button class="btn-map-app" onclick="openNativeMapApp('${safeAddress}', '${safeBuilding}')">🗺️ スマホMap</button></p>
         ${shop.building ? `<p><strong>🏢 建物名:</strong> ${safeBuilding}</p>` : ''}
@@ -773,7 +821,6 @@ function openCustomModal(shop) {
         <p><strong>🏷️ 種類:</strong> ${escapeHtml(shop.genre || '未設定')}</p>
         <p><strong>📝 備考:</strong> ${escapeHtml(shop.memo || 'なし')}</p>
     `;
-    
     if (shop.files && shop.files.length > 0) {
         bodyHtml += `<div class="popup-photos">`;
         for (const file of shop.files) {
@@ -781,13 +828,12 @@ function openCustomModal(shop) {
             if (file.type && file.type.startsWith('video/')) {
                 bodyHtml += `<video src="${file.data}" controls></video>`;
             } else {
-                bodyHtml += `<img src="${file.data}" onclick="window.open('${file.data}')" title="クリックで拡大">`;
+                bodyHtml += `<img src="${file.data}" onclick="window.open('${file.data}')">`;
             }
             bodyHtml += `</div>`;
         }
         bodyHtml += `</div>`;
     }
-    
     document.getElementById('modal-shop-body').innerHTML = bodyHtml;
     document.getElementById('custom-modal-area').classList.add('active');
 }
@@ -801,37 +847,18 @@ function closeCustomModal(e) {
 async function saveToSpreadsheet() {
     const statusLabel = document.getElementById('sync-status');
     statusLabel.innerText = "💾 クラウドに保存中...";
-    try {
-        const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
-        if (res.ok) {
-            statusLabel.innerText = "✅ スプレッドシートに保存しました！";
-        } else {
-            statusLabel.innerText = "❌ クラウド保存エラー(ステータス不正)";
-        }
-    } catch(e) {
-        console.error(e);
-        statusLabel.innerText = "❌ クラウド保存エラー";
-    }
+    const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
+    if (res.ok) statusLabel.innerText = "✅ スプレッドシートに保存しました！";
 }
 
 async function handleFileSelect(event) {
     const files = event.target.files;
     if(!files) return;
-    
     for (const file of files) {
-        try {
-            const base64Data = await convertFileToBase64(file);
-            uploadedFiles.push({
-                name: file.name,
-                type: file.type,
-                data: base64Data, 
-                memo: '',
-                isGitHubUploaded: false, 
-                githubUrl: ''
-            });
-        } catch (err) {
-            console.error("ファイルの読み込みに失敗:", err);
-        }
+        const base64Data = await convertFileToBase64(file);
+        uploadedFiles.push({
+            name: file.name, type: file.type, data: base64Data, memo: '', isGitHubUploaded: false, githubUrl: ''
+        });
     }
     renderPhotoPreviews();
     event.target.value = '';
@@ -849,44 +876,28 @@ function convertFileToBase64(file) {
 function renderPhotoPreviews() {
     const container = document.getElementById('preview-zone');
     container.innerHTML = '';
-    
     uploadedFiles.forEach((file, index) => {
         const card = document.createElement('div');
         card.className = 'preview-card';
-        
         if (file.type && file.type.startsWith('video/')) {
-            const video = document.createElement('video');
-            video.src = file.githubUrl || file.data;
-            video.controls = true;
-            card.appendChild(video);
+            card.innerHTML = `<video src="${file.githubUrl || file.data}" controls></video>`;
         } else {
-            const img = document.createElement('img');
-            img.src = file.githubUrl || file.data;
-            card.appendChild(img);
+            card.innerHTML = `<img src="${file.githubUrl || file.data}">`;
         }
-        
         const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'memo-input';
-        input.placeholder = '写真のメモを入力';
+        input.type = 'text'; input.className = 'memo-input'; input.placeholder = '写真のメモ';
         input.value = file.memo || '';
         input.onchange = (e) => { uploadedFiles[index].memo = e.target.value; };
         card.appendChild(input);
         
         const delBtn = document.createElement('button');
-        delBtn.className = 'btn-del-photo';
-        delBtn.innerHTML = '×';
-        delBtn.onclick = () => {
-            uploadedFiles.splice(index, 1);
-            renderPhotoPreviews();
-        };
+        delBtn.className = 'btn-del-photo'; delBtn.innerHTML = '×';
+        delBtn.onclick = () => { uploadedFiles.splice(index, 1); renderPhotoPreviews(); };
         card.appendChild(delBtn);
-        
         container.appendChild(card);
     });
 }
 
-// バックアップ用フォールバック検索関数
 async function fetchCoordinatesWithFallback(addressStr) {
     const userAgent = "MyGourmetMapApp/6.0 (contact: map-app-user@example.com)";
     try {
@@ -894,13 +905,9 @@ async function fetchCoordinatesWithFallback(addressStr) {
         const res = await fetch(url, { headers: { "User-Agent": userAgent } });
         if (res.ok) {
             const data = await res.json();
-            if (data && data.length > 0) {
-                return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-            }
+            if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
         }
-    } catch (e) {
-        console.error("フォールバック検索エラー:", e);
-    }
+    } catch (e) { console.error(e); }
     return { lat: null, lng: null };
 }
 
@@ -913,105 +920,50 @@ async function saveRegisteredShop() {
     const memo = document.getElementById('shop-memo').value.trim();
     let id = document.getElementById('edit-shop-id').value;
     
-    // サジェスト選択時に保持された緯度経度
     let lat = document.getElementById('shop-lat').value ? parseFloat(document.getElementById('shop-lat').value) : null;
     let lng = document.getElementById('shop-lng').value ? parseFloat(document.getElementById('shop-lng').value) : null;
     
-    if (!name) {
-        alert("店名は必須入力です。");
-        return;
-    }
-    
-    if (uploadedFiles.length > 0) {
-        const hasToken = checkAndPromptGitHubToken();
-        if (!hasToken) {
-            alert("GitHubトークンが無いため写真を保存できません。登録を中断します。");
-            return;
-        }
-    }
+    if (!name) { alert("店名は必須入力です。"); return; }
+    if (uploadedFiles.length > 0 && !checkAndPromptGitHubToken()) return;
     
     const submitBtn = document.getElementById('btn-submit-shop');
-    submitBtn.disabled = true;
-    submitBtn.innerText = "⏳ 処理中...";
-    
-    const statusLabel = document.getElementById('sync-status');
-    statusLabel.innerText = "🚀 GitHubへ写真を保存中...";
+    submitBtn.disabled = true; submitBtn.innerText = "⏳ 処理中...";
+    document.getElementById('sync-status').innerText = "🚀 GitHubへ写真を保存中...";
     
     for (const file of uploadedFiles) {
         if (!file.isGitHubUploaded && file.data.includes(',')) {
             const cleanBase64 = file.data.split(',')[1]; 
             const safePath = `shops/Restaurant/${name}/${Date.now()}_${file.name}`;
-            
             try {
                 const ghRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${safePath}`, {
                     method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${GITHUB_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: `Add shop photo: shops/Restaurant/${name}/${file.name}`,
-                        content: cleanBase64,
-                        branch: GITHUB_BRANCH
-                    })
+                    headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Add photo: ${file.name}`, content: cleanBase64, branch: GITHUB_BRANCH })
                 });
-                
                 if (ghRes.ok) {
                     file.githubUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}/${safePath}`;
                     file.isGitHubUploaded = true;
                     file.data = file.githubUrl; 
                 }
-            } catch (err) {
-                console.error("GitHub通信エラー:", err);
-            }
+            } catch (err) { console.error(err); }
         }
     }
     
-    // 🎯 候補を選択せずに直接登録した場合、または編集時などで値が空な場合は、最後の手段として検索を実行
     if (address && (!lat || !lng)) {
-        statusLabel.innerText = "⏳ 住所から位置情報を検索中...";
         const coords = await fetchCoordinatesWithFallback(address);
-        lat = coords.lat;
-        lng = coords.lng;
+        lat = coords.lat; lng = coords.lng;
     }
+    if (!id) id = 'shop_' + Date.now();
     
-    if (!id) {
-        id = 'shop_' + Date.now();
-    }
-    
-    appData.logs[id] = {
-        id: id,
-        name: name,
-        address: address,
-        building: building, 
-        price: price,
-        genre: genre,
-        memo: memo,
-        lat: lat,
-        lng: lng,
-        files: [...uploadedFiles]
-    };
-    
+    appData.logs[id] = { id, name, address, building, price, genre, memo, lat, lng, files: [...uploadedFiles] };
     renderApp();
-    
-    if (lat && lng) {
-        map.setView([lat, lng], 15);
-        statusLabel.innerText = "✅ 反映完了。最上部の【保存】でスプシへ同期してください。";
-    } else {
-        statusLabel.innerText = "⚠️ 位置情報が取得できませんでした。［スマホMap］ボタンをご利用ください。";
-    }
-    
-    submitBtn.disabled = false;
-    submitBtn.innerText = "登録";
     switchPage('main');
 }
 
 function editShop(id) {
     const shop = appData.logs[id];
     if (!shop) return;
-    
     switchPage('register');
-    
     document.getElementById('edit-shop-id').value = shop.id;
     document.getElementById('shop-name').value = shop.name || '';
     document.getElementById('shop-address').value = shop.address || '';
@@ -1019,11 +971,8 @@ function editShop(id) {
     document.getElementById('shop-price').value = shop.price || '';
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-memo').value = shop.memo || '';
-    
-    // 編集時は元の緯度経度を隠し要素に入れておく
     document.getElementById('shop-lat').value = shop.lat || '';
     document.getElementById('shop-lng').value = shop.lng || '';
-    
     uploadedFiles = shop.files ? JSON.parse(JSON.stringify(shop.files)) : [];
     renderPhotoPreviews();
     map.closePopup();
@@ -1046,43 +995,26 @@ function clearForm() {
 function buildFilterMenu(type, elementSet) {
     const listContainer = document.getElementById(`${type}-filter-list`);
     listContainer.innerHTML = '';
-    
     for (const item of elementSet) {
         if (!item) continue;
         const div = document.createElement('div');
         div.className = `filter-item ${currentFilters[type] === item ? 'selected' : ''}`;
-        div.innerText = item;
-        div.onclick = () => setFilter(type, item);
+        div.innerText = item; div.onclick = () => setFilter(type, item);
         listContainer.appendChild(div);
     }
 }
 
-function setFilter(type, value) {
-    currentFilters[type] = value;
-    closeAllFilterTabs();
-    renderApp();
-}
-
-function clearFilter() {
-    currentFilters.price = '';
-    currentFilters.genre = '';
-    renderApp();
-}
-
+function setFilter(type, value) { currentFilters[type] = value; closeAllFilterTabs(); renderApp(); }
+function clearFilter() { currentFilters.price = ''; currentFilters.genre = ''; renderApp(); }
 function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
-    
     let activeTexts = [];
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
-    
     if (activeTexts.length > 0) {
-        text.innerText = `🔍 絞り込み中 ➔ ${activeTexts.join(' | ')}`;
-        bar.style.display = 'flex';
-    } else {
-        bar.style.display = 'none';
-    }
+        text.innerText = `🔍 絞り込み中 ➔ ${activeTexts.join(' | ')}`; bar.style.display = 'flex';
+    } else { bar.style.display = 'none'; }
 }
 
 function escapeHtml(str) {
