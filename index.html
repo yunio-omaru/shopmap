@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (リスト表示追加版)</title>
+<title>自分専用飲食店マップ (未取得店舗対応版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -82,7 +82,7 @@ button {
     z-index: 1;
 }
 
-/* 📥 追加: 店舗リスト表示エリアのスタイル */
+/* 店舗リスト表示エリアのスタイル */
 .list-section-title {
     font-size: 1.1rem;
     font-weight: bold;
@@ -155,6 +155,43 @@ button {
     background: #f0f0f0;
     border-radius: 12px;
     font-size: 0.9rem;
+}
+
+/* 📥 追加: 位置情報未取得店舗用のカスタムモーダル（ポップアップ表示） */
+.custom-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+.custom-modal.active { display: flex; }
+.modal-content {
+    background: var(--card-bg);
+    width: 90%;
+    max-width: 500px;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+.modal-close-btn {
+    background: none;
+    font-size: 1.5rem;
+    padding: 0;
+    color: #999;
 }
 
 /* フィルター用ドロップダウンタブ */
@@ -376,6 +413,23 @@ textarea.form-control { height: 80px; resize: vertical; }
 
 </div>
 
+<div id="custom-modal-area" class="custom-modal" onclick="closeCustomModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div>
+                <span style="color: var(--accent-color); font-weight: bold; font-size: 0.85rem; display: block; margin-bottom: 2px;">⚠️ 位置情報未取得</span>
+                <h3 id="modal-shop-name" style="margin:0; font-size:1.3rem; color: var(--primary-color);">店名</h3>
+            </div>
+            <button id="modal-edit-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;">編集</button>
+        </div>
+        <div id="modal-shop-body" class="popup-content">
+            </div>
+        <div style="text-align: right; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+            <button class="btn-secondary" onclick="closeCustomModal(null)">閉じる</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
@@ -395,7 +449,7 @@ let appData = {
 
 let map;
 let markersLayer;
-let markerObjects = {}; // 📥 追加: リストからマーカーを呼び出すための参照用辞書
+let markerObjects = {}; 
 let currentFilters = { price: '', genre: '' };
 let uploadedFiles = []; 
 
@@ -509,7 +563,7 @@ function renderApp() {
     const uniqueGenres = new Set();
     
     const listZone = document.getElementById('shop-list-zone');
-    listZone.innerHTML = ''; // リストのクリア
+    listZone.innerHTML = ''; 
     
     const shopList = Object.values(appData.logs);
     let matchCount = 0;
@@ -521,7 +575,6 @@ function renderApp() {
         if (shop.price) uniquePrices.add(shop.price);
         if (shop.genre) uniqueGenres.add(shop.genre);
         
-        // フィルター判定
         if (currentFilters.price && shop.price !== currentFilters.price) continue;
         if (currentFilters.genre && shop.genre !== currentFilters.genre) continue;
         
@@ -564,20 +617,17 @@ function renderApp() {
             marker.bindPopup(popupHtml);
             markersLayer.addLayer(marker);
             
-            // リスト連動用にマーカーオブジェクトを保持
             markerObjects[shop.id] = marker;
         }
         
-        // ② 📥 追加: 下部リストカードの作成
+        // ② 下部リストカードの作成
         const card = document.createElement('div');
         card.className = 'shop-list-card';
-        // クリックしたらその場所にジャンプする連動設定
         card.setAttribute('onclick', `focusShopOnMap('${shop.id}', ${shop.lat}, ${shop.lng})`);
         
         let mediaHtml = '';
         if (shop.files && shop.files.length > 0) {
             mediaHtml += `<div class="shop-list-media">`;
-            // 最大2枚までプレビュー表示
             shop.files.slice(0, 2).forEach(f => {
                 if(f.type && f.type.startsWith('video/')) {
                     mediaHtml += `<video class="shop-list-thumb" src="${f.data}"></video>`;
@@ -590,7 +640,7 @@ function renderApp() {
         
         card.innerHTML = `
             <div class="shop-list-info">
-                <div class="shop-list-name">${escapeHtml(shop.name)} ${(!shop.lat || !shop.lng) ? '⚠️(位置未取得)' : ''}</div>
+                <div class="shop-list-name">${escapeHtml(shop.name)} ${(!shop.lat || !shop.lng) ? '<span style="color:var(--accent-color); font-size:0.8rem;">⚠️(位置未取得)</span>' : ''}</div>
                 <div class="shop-list-meta">
                     <span>💰 ${escapeHtml(shop.price || '未設定')}</span>
                     <span>🏷️ ${escapeHtml(shop.genre || '未設定')}</span>
@@ -602,7 +652,6 @@ function renderApp() {
         listZone.appendChild(card);
     }
     
-    // 件数カウント更新
     document.getElementById('shop-count').innerText = matchCount;
     if (matchCount === 0) {
         listZone.innerHTML = `<div class="no-data-msg">該当する店舗データがありません。</div>`;
@@ -622,16 +671,65 @@ function renderApp() {
     updateFilterBarDisplay();
 }
 
-/*** 📥 追加: リストがクリックされた時に地図を動かす関数
+/*** 📥 修正: リストクリック時の挙動（位置情報がない場合はカスタムモーダルを開く）
 */
 function focusShopOnMap(shopId, lat, lng) {
+    const shop = appData.logs[shopId];
+    if (!shop) return;
+
     if (lat && lng && markerObjects[shopId]) {
+        // 位置情報がある場合は地図へジャンプ
         map.setView([lat, lng], 16);
         markerObjects[shopId].openPopup();
-        // 地図エリアまでスムーズにスクロールさせる
         document.getElementById('map-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
-        alert("この店舗は位置情報（緯度経度）が登録されていないため、地図上でジャンプできません。正しい住所を入力して編集し直してください。");
+        // 📥 期待値通り、位置情報が無い場合は詳細ポップアップ画面を起動
+        openCustomModal(shop);
+    }
+}
+
+/*** 📥 追加: カスタムポップアップ（モーダル窓）の制御
+*/
+function openCustomModal(shop) {
+    document.getElementById('modal-shop-name').innerText = shop.name;
+    
+    // 右上の編集ボタンにクリックアクションを設定
+    const editBtn = document.getElementById('modal-edit-btn');
+    editBtn.onclick = () => {
+        closeCustomModal(null);
+        editShop(shop.id);
+    };
+    
+    // 詳細本文の組み立て
+    let bodyHtml = `
+        <p><strong>📍 住所:</strong> ${escapeHtml(shop.address || '未設定')}</p>
+        <p><strong>💰 価格:</strong> ${escapeHtml(shop.price || '未設定')}</p>
+        <p><strong>🏷️ 種類:</strong> ${escapeHtml(shop.genre || '未設定')}</p>
+        <p><strong>📝 備考:</strong> ${escapeHtml(shop.memo || 'なし')}</p>
+    `;
+    
+    if (shop.files && shop.files.length > 0) {
+        bodyHtml += `<div class="popup-photos">`;
+        for (const file of shop.files) {
+            bodyHtml += `<div class="popup-photo-item">`;
+            if (file.type && file.type.startsWith('video/')) {
+                bodyHtml += `<video src="${file.data}" controls></video>`;
+            } else {
+                bodyHtml += `<img src="${file.data}" onclick="window.open('${file.data}')" title="クリックで拡大">`;
+            }
+            bodyHtml += `<span title="${escapeHtml(file.memo || '')}">${escapeHtml(file.memo || 'メモなし')}</span>`;
+            bodyHtml += `</div>`;
+        }
+        bodyHtml += `</div>`;
+    }
+    
+    document.getElementById('modal-shop-body').innerHTML = bodyHtml;
+    document.getElementById('custom-modal-area').classList.add('active');
+}
+
+function closeCustomModal(e) {
+    if (e === null || e.target === document.getElementById('custom-modal-area')) {
+        document.getElementById('custom-modal-area').classList.remove('active');
     }
 }
 
