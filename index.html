@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (エリア連動版)</title>
+<title>自分専用飲食店マップ (エリアマップ精度修正版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -293,7 +293,6 @@ textarea.form-control { height: 80px; resize: vertical; }
 
     <div id="sync-status" class="sync-status-bar">🔄 接続確認中...</div>
 
-    <!-- 🏠 メインメニュー画面 -->
     <div id="page-main" class="page active">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">📍 マイ飲食店マップ</h1>
@@ -348,7 +347,6 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
     </div>
 
-    <!-- ✍️ 店舗登録画面 -->
     <div id="page-register" class="page">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">✍️ 店舗登録</h1>
@@ -472,7 +470,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFromSpreadsheet();
 });
 
-// 住所からエリアを推測する関数
 function autoDetectArea(address) {
     if (!address) return "";
     for (const item of AUTO_AREA_KEYWORDS) {
@@ -485,19 +482,13 @@ function autoDetectArea(address) {
     return "";
 }
 
-// エリアのフィルター条件にマッチするか判定する関数（近隣エリア対応）
 function isAreaMatch(shopArea, filterArea) {
-    if (!filterArea) return true; // フィルターなし
+    if (!filterArea) return true; 
     if (!shopArea) return false;
-    
-    // 完全に一致する場合
     if (shopArea === filterArea) return true;
-    
-    // 近隣エリアのグループ定義がある場合
     if (NEIGHBOR_AREAS[filterArea]) {
         return NEIGHBOR_AREAS[filterArea].includes(shopArea);
     }
-    
     return false;
 }
 
@@ -677,7 +668,6 @@ function renderApp() {
         if (shop.price) uniquePrices.add(shop.price);
         if (shop.genre) uniqueGenres.add(shop.genre);
         
-        // 💡 改良：近隣エリアも含めるカスタムマッチング判定
         if (!isAreaMatch(shop.area, currentFilters.area)) continue;
         if (currentFilters.price && shop.price !== currentFilters.price) continue;
         if (currentFilters.genre && shop.genre !== currentFilters.genre) continue;
@@ -782,17 +772,13 @@ function compressImage(base64Str, maxWidth, quality) {
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
-            
             if (width > maxWidth) {
                 height = Math.round((height * maxWidth) / width);
                 width = maxWidth;
             }
-            
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = width; canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
-            
             const outputType = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0 ? 'image/webp' : 'image/jpeg';
             resolve(canvas.toDataURL(outputType, quality));
         };
@@ -858,11 +844,7 @@ async function saveRegisteredShop() {
     if (!name) { alert("店名は必須入力です。"); return; }
     if (!address) { alert("住所は必須入力です。"); return; }
     
-    // 💡 改良：エリアが空欄の場合、住所キーワードから自動検出を試みる
-    if (!area) {
-        area = autoDetectArea(address);
-    }
-    
+    if (!area) { area = autoDetectArea(address); }
     if (uploadedFiles.length > 0 && !checkAndPromptGitHubToken()) return;
     
     const submitBtn = document.getElementById('btn-submit-shop');
@@ -888,20 +870,14 @@ async function saveRegisteredShop() {
                 } else {
                     file.data = origUrl;
                 }
-                
                 file.isGitHubUploaded = true;
-            } catch (err) { 
-                console.error("GitHubへのアップロードエラー:", err); 
-            }
+            } catch (err) { console.error("GitHubへのアップロードエラー:", err); }
         }
     }
     
     if (!id) id = 'shop_' + timestamp;
-    
     const sanitizedFiles = uploadedFiles.map(f => {
-        const copy = { ...f };
-        delete copy.originalData; 
-        return copy;
+        const copy = { ...f }; delete copy.originalData; return copy;
     });
     
     appData.logs[id] = { id, name, address, building, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
@@ -909,14 +885,9 @@ async function saveRegisteredShop() {
     statusLabel.innerText = "💾 クラウド（スプレッドシート）へ自動保存中...";
     const isSaved = await saveToSpreadsheet();
     
-    submitBtn.disabled = false;
-    submitBtn.innerText = "登録";
-    if(isSaved) {
-        renderApp();
-        switchPage('main');
-    } else {
-        alert("スプレッドシートへの自動保存に失敗しました。電波状況を確認してください。");
-    }
+    submitBtn.disabled = false; submitBtn.innerText = "登録";
+    if(isSaved) { renderApp(); switchPage('main'); }
+    else { alert("スプレッドシートへの自動保存に失敗しました。"); }
 }
 
 function editShop(id) {
@@ -931,7 +902,6 @@ function editShop(id) {
     document.getElementById('shop-price').value = shop.price || '';
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-memo').value = shop.memo || '';
-    
     uploadedFiles = shop.files ? JSON.parse(JSON.stringify(shop.files)) : [];
     renderPhotoPreviews();
 }
@@ -945,8 +915,7 @@ function clearForm() {
     document.getElementById('shop-price').value = '';
     document.getElementById('shop-genre').value = '';
     document.getElementById('shop-memo').value = '';
-    uploadedFiles = [];
-    document.getElementById('preview-zone').innerHTML = '';
+    uploadedFiles = []; document.getElementById('preview-zone').innerHTML = '';
 }
 
 function buildFilterMenu(type, elementSet) {
@@ -965,16 +934,28 @@ function setFilter(type, value) {
     currentFilters[type] = value; 
     closeAllFilterTabs(); 
     
-    // 現在開いている詳細パネルを閉じる
     document.getElementById('focused-shop-panel').style.display = 'none';
     
-    // 💡 改良：エリアフィルター選択時、マップをその地域（福岡市〇〇）に自動ズーム
+    // 💡 精度改善の超重要スポット
     if (type === 'area' && value) {
-        // 福岡市の主要エリアとして認識させ、Google Mapを自動スクロール＆拡大
-        const mapSearchWord = `福岡県福岡市中央区${value}`; 
-        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(mapSearchWord)}&z=15&output=embed`;
+        let mapSearchWord = "";
+        
+        // 現在登録されているすべての店から、選んだエリアに「完全に合致する店舗」または「近隣グループの店舗」を探す
+        const targetShop = Object.values(appData.logs).find(shop => 
+            shop && shop.address && (shop.area === value || isAreaMatch(shop.area, value))
+        );
+        
+        if (targetShop) {
+            // 🎯 【重要】そのエリアにある実際の店舗の「本物の住所」をマップの検索ワードにする！
+            // 筑紫野や大分宇佐なら、そのお店のリアルな住所がそのまま渡るので絶対狂いません
+            mapSearchWord = targetShop.address;
+        } else {
+            // もし万が一、店舗が0件だけどエリア名だけが存在する場合は安全策として地域名で検索
+            mapSearchWord = value.includes("福岡") ? value : `福岡県 ${value}`;
+        }
+        
+        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(mapSearchWord)}&z=14&output=embed`;
     } else if (!currentFilters.area) {
-        // エリア指定がない、または全表示に戻した場合は天神中心に戻す
         document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
     }
     
@@ -982,9 +963,7 @@ function setFilter(type, value) {
 }
 
 function clearFilter() { 
-    currentFilters.area = ''; 
-    currentFilters.price = ''; 
-    currentFilters.genre = ''; 
+    currentFilters.area = ''; currentFilters.price = ''; currentFilters.genre = ''; 
     document.getElementById('focused-shop-panel').style.display = 'none';
     document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
     renderApp(); 
@@ -995,7 +974,6 @@ function updateFilterBarDisplay() {
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
     if (currentFilters.area) {
-        // 近隣巻き込みがある場合は明記
         const hasNeighbors = NEIGHBOR_AREAS[currentFilters.area] ? "（近隣含む）" : "";
         activeTexts.push(`エリア: ${currentFilters.area}${hasNeighbors}`);
     }
