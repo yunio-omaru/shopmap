@@ -325,7 +325,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
 
         <div id="main-google-map" class="main-map-container">
-            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=福岡県&z=10&output=embed"></iframe>
+            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=&z=16&output=embed"></iframe>
         </div>
 
         <div id="focused-shop-panel" class="focused-shop-panel">
@@ -468,7 +468,6 @@ function focusShop(shopId) {
             if (file.type && file.type.startsWith('video/')) {
                 mediaHtml = `<video src="${file.data}" controls></video>`;
             } else {
-                // 💡 通常時は「GitHub上の軽量版URL（file.data）」を表示。タップで「高画質版URL（file.githubUrl）」を開く
                 mediaHtml = `<img src="${file.data}" onclick="window.open('${file.githubUrl || file.data}')">`;
             }
             
@@ -691,7 +690,7 @@ async function handleFileSelect(event) {
         uploadedFiles.push({
             name: file.name, 
             type: file.type, 
-            data: base64Display, // 選択直後は軽量Base64、保存後にGitHubの軽量版URLに書き換える
+            data: base64Display, 
             originalData: base64Original, 
             memo: '', 
             isGitHubUploaded: false, 
@@ -762,7 +761,6 @@ function renderPhotoPreviews() {
     });
 }
 
-// GitHubAPIへのファイル送信共通関数
 async function uploadToGitHub(path, base64Data) {
     const cleanBase64 = base64Data.split(',')[1];
     const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`, {
@@ -791,28 +789,24 @@ async function saveRegisteredShop() {
     const submitBtn = document.getElementById('btn-submit-shop');
     submitBtn.disabled = true; submitBtn.innerText = "⏳ 保存中...";
     const statusLabel = document.getElementById('sync-status');
-    statusLabel.innerText = "🚀 GitHubへ写真（オリジナル＆軽量版）を保存中...";
+    statusLabel.innerText = "🚀 GitHubへ写真を保存中...";
     
     const timestamp = Date.now();
     
     for (const file of uploadedFiles) {
         if (!file.isGitHubUploaded && file.data.includes(',')) {
             try {
-                // 1. オリジナルデータのアップロード
                 const targetOrigData = file.originalData || file.data;
                 const origPath = `shops/Restaurant/${name}/${timestamp}_${file.name}`;
                 const origUrl = await uploadToGitHub(origPath, targetOrigData);
-                file.githubUrl = origUrl; // 高画質版のURLを確保
+                file.githubUrl = origUrl; 
                 
-                // 2. 軽量化サムネイルデータのアップロード（画像のみ）
                 if (file.type && file.type.startsWith('image/')) {
-                    // 拡張子を調整（webp対応時は.webpに、未対応ならそのまま）
                     const ext = file.data.startsWith('data:image/webp') ? 'webp' : 'jpg';
                     const thumbPath = `shops/Restaurant/${name}/thumb_${timestamp}_${file.name}.${ext}`;
                     const thumbUrl = await uploadToGitHub(thumbPath, file.data);
-                    file.data = thumbUrl; // 💡スプシに保存するURLを「GitHub上の軽量版URL」に上書き
+                    file.data = thumbUrl; 
                 } else {
-                    // 動画等の場合は軽量版を作らないため、同じURLを入れる
                     file.data = origUrl;
                 }
                 
@@ -825,7 +819,6 @@ async function saveRegisteredShop() {
     
     if (!id) id = 'shop_' + timestamp;
     
-    // スプシ送信前にローカルのBase64（重い塊）を完全に消去してURLだけの状態にする
     const sanitizedFiles = uploadedFiles.map(f => {
         const copy = { ...f };
         delete copy.originalData; 
@@ -905,7 +898,7 @@ function updateFilterBarDisplay() {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, ''');
+    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, "'");
 }
 </script>
 </body>
