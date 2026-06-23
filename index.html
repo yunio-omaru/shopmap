@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (漢数字変換＆純正マップ連携版)</title>
+<title>自分専用飲食店マップ (初回トークン入力なし版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -354,7 +354,7 @@ textarea.form-control { height: 80px; resize: vertical; }
             </div>
         </header>
         
-        <div class="app-content" style="background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div class="app-content" style="background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.044);">
             <input type="hidden" id="edit-shop-id">
             
             <div class="form-group">
@@ -441,20 +441,24 @@ let uploadedFiles = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
-    checkGitHubToken(); 
+    // 💡 初回起動時の checkGitHubToken() ポップアップ呼び出しを削除しました
     loadFromSpreadsheet();
 });
 
-function checkGitHubToken() {
+// 🔒 トークンをチェックし、無ければ入力させる関数（登録保存時のみ呼び出しに変更）
+function checkAndPromptGitHubToken() {
     if (!GITHUB_TOKEN) {
-        const token = prompt("GitHubの「個人アクセストークン(PAT)」を入力してください（ブラウザに初回のみ安全に記憶されます）:");
+        const token = prompt("GitHubの「個人アクセストークン(PAT)」を入力してください（写真の保存に必要です。ブラウザに安全に記憶されます）:");
         if (token && token.trim() !== "") {
             localStorage.setItem('MY_GOURMET_MAP_PAT', token.trim());
             GITHUB_TOKEN = token.trim();
+            return true;
         } else {
             alert("トークンが入力されませんでした。");
+            return false;
         }
     }
+    return true;
 }
 
 function resetGitHubToken() {
@@ -535,10 +539,8 @@ async function executeSave() {
     }
 }
 
-// 📱 純正マップアプリを起動するためのヘルパー関数
 function openNativeMapApp(address, building) {
     const query = encodeURIComponent(address + (building ? ' ' + building : ''));
-    // iOS (iPhone/iPad) かどうかを判別してURLスキームを切り替える
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const url = isIOS ? `maps://?q=${query}` : `geo:0,0?q=${query}`;
     window.open(url, '_blank');
@@ -807,41 +809,30 @@ function renderPhotoPreviews() {
     });
 }
 
-// 🎯 【超強化】「〇県」削除 ＆「漢数字＋丁目」100%読み替えロジック
 function convertToOpenStreetMapFormat(addressStr) {
     if (!addressStr) return "";
+    let cleanAddress = addressStr.replace(/^[^\s市区町村]{2,5}?[都道府県]/, "");
     
-    // 1. 都道府県名（例: 福岡県、東京都など）を先頭から削除
-    let cleanAddress = addressStr.replace(/^[^\s市区町村{2,5}]+?[都道府県]/, "");
-    
-    // 2. 「数字-数字-数字」や「数字丁目」を検出し、市区町村の直後の数字を漢数字に変換
-    // 漢数字マッピングテーブル
     const kanjiNums = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
     const toKanji = (numStr) => {
         return numStr.split("").map(n => kanjiNums[parseInt(n)] || n).join("");
     };
 
-    // 住所から「市区町村」の直後にある「数字」の部分を捉える正規表現
-    // 例:「福岡市中央区警固1-4-27」や「警固１丁目」など全角半角に対応
     const chomeRegex = /(.*?[区市町村][^0-9\-\uFF10-\uFF19]+)([0-9\uFF10-\uFF19]+)(?:[-－丁番]|$)/;
-    
-    // 全角数字を半角数字に統一
     let standardized = cleanAddress.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
     
     const match = standardized.match(chomeRegex);
     if (match && match[1] && match[2]) {
-        // マッチした数字の部分（例: "1"）を漢数字に変えて、後ろに強制的に「丁目」を結合
         let kanjiChome = toKanji(match[2]) + "丁目";
         return match[1] + kanjiChome;
     }
     
-    return cleanAddress; // マッチしなかった場合は県を抜いた住所をそのまま返す
+    return cleanAddress;
 }
 
 async function fetchCoordinatesWithFallback(addressStr) {
-    const userAgent = "MyGourmetMapApp/3.0 (contact: map-app-user@example.com)";
+    const userAgent = "MyGourmetMapApp/4.0 (contact: map-app-user@example.com)";
     
-    // まずユーザーが入力した住所を試す
     try {
         const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr)}`;
         const res = await fetch(url, { headers: { "User-Agent": userAgent } });
@@ -857,7 +848,6 @@ async function fetchCoordinatesWithFallback(addressStr) {
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // 🎯 変換ロジックを適用: 「福岡県福岡市中央区警固1-4-27」➔「福岡市中央区警固一丁目」
     const osmFormatAddress = convertToOpenStreetMapFormat(addressStr);
     
     if (osmFormatAddress && osmFormatAddress !== addressStr) {
@@ -894,10 +884,11 @@ async function saveRegisteredShop() {
         return;
     }
     
-    if (!GITHUB_TOKEN) {
-        checkGitHubToken();
-        if (!GITHUB_TOKEN) {
-            alert("GitHubトークンが無いため写真を保存できません。");
+    // 💡 登録ボタンが押されたタイミングで、トークンが無ければ入力を求めます
+    if (uploadedFiles.length > 0) {
+        const hasToken = checkAndPromptGitHubToken();
+        if (!hasToken) {
+            alert("GitHubトークンが無いため写真を保存できません。登録を中断します。");
             return;
         }
     }
