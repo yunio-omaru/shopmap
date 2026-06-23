@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (未取得店舗対応版)</title>
+<title>自分専用飲食店マップ (ビル名欄追加・バグ修正版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -157,7 +157,7 @@ button {
     font-size: 0.9rem;
 }
 
-/* 📥 追加: 位置情報未取得店舗用のカスタムモーダル（ポップアップ表示） */
+/* 位置情報未取得店舗用のカスタムモーダル（ポップアップ表示） */
 .custom-modal {
     display: none;
     position: fixed;
@@ -376,8 +376,13 @@ textarea.form-control { height: 80px; resize: vertical; }
             </div>
             
             <div class="form-group">
-                <label for="shop-address">住所</label>
-                <input type="text" id="shop-address" class="form-control" placeholder="例) 福岡県福岡市中央区...">
+                <label for="shop-address">住所 (※位置特定のため、ビル名や階数はここに入れないでください) </label>
+                <input type="text" id="shop-address" class="form-control" placeholder="例) 福岡県福岡市中央区警固1-4-27">
+            </div>
+
+            <div class="form-group">
+                <label for="shop-building">ビル名・階数 (※マップピンの計算には影響しません)</label>
+                <input type="text" id="shop-building" class="form-control" placeholder="例) ＫＥＧＯエイトビル 2F">
             </div>
             
             <div class="form-group">
@@ -434,12 +439,12 @@ textarea.form-control { height: 80px; resize: vertical; }
 <script>
 let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
 
-// ⚙️ 【ここを毎回書き換える】GitHubの環境設定
+// ⚙️ 【環境設定】GitHubのユーザー名とリポジトリ名
 const GITHUB_OWNER = "ここにあなたのGitHubユーザー名を入力";
 const GITHUB_REPO  = "ここにあなたのリポジトリ名を入力";
 const GITHUB_BRANCH = "main"; 
 
-// 🔗 【ここを毎回書き換える】GASのWebアプリURL
+// 🔗 【環境設定】GASのWebアプリURL
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
 
 let appData = {
@@ -553,8 +558,6 @@ function collectFormData() {
     if (!appData.logs) appData.logs = {};
 }
 
-/*** 💻 データを画面（地図＆リスト）に描写する
-*/
 function renderApp() {
     markersLayer.clearLayers();
     markerObjects = {}; 
@@ -568,7 +571,6 @@ function renderApp() {
     const shopList = Object.values(appData.logs);
     let matchCount = 0;
     
-    // ループ処理内で厳密にデータ集計・描画を行うため for...of 構文を使用
     for (const shop of shopList) {
         if (!shop || !shop.name) continue;
         
@@ -580,6 +582,9 @@ function renderApp() {
         
         matchCount++;
         
+        // フル住所（表示用）の作成
+        const fullAddressDisplay = shop.address + (shop.building ? ' ' + shop.building : '');
+        
         // ① 地図へのピン設置処理
         if (shop.lat && shop.lng) {
             const marker = L.marker([shop.lat, shop.lng]);
@@ -588,6 +593,7 @@ function renderApp() {
                 <div class="popup-content">
                     <h3>${escapeHtml(shop.name)}</h3>
                     <p><strong>📍 住所:</strong> ${escapeHtml(shop.address || '未設定')}</p>
+                    ${shop.building ? `<p><strong>🏢 建物名:</strong> ${escapeHtml(shop.building)}</p>` : ''}
                     <p><strong>💰 価格:</strong> ${escapeHtml(shop.price || '未設定')}</p>
                     <p><strong>🏷️ 種類:</strong> ${escapeHtml(shop.genre || '未設定')}</p>
                     <p><strong>📝 備考:</strong> ${escapeHtml(shop.memo || 'なし')}</p>
@@ -645,7 +651,7 @@ function renderApp() {
                     <span>💰 ${escapeHtml(shop.price || '未設定')}</span>
                     <span>🏷️ ${escapeHtml(shop.genre || '未設定')}</span>
                 </div>
-                <div class="shop-list-address">📍 ${escapeHtml(shop.address || '住所未設定')}</div>
+                <div class="shop-list-address">📍 ${escapeHtml(fullAddressDisplay || '住所未設定')}</div>
             </div>
             ${mediaHtml}
         `;
@@ -671,38 +677,31 @@ function renderApp() {
     updateFilterBarDisplay();
 }
 
-/*** 📥 修正: リストクリック時の挙動（位置情報がない場合はカスタムモーダルを開く）
-*/
 function focusShopOnMap(shopId, lat, lng) {
     const shop = appData.logs[shopId];
     if (!shop) return;
 
     if (lat && lng && markerObjects[shopId]) {
-        // 位置情報がある場合は地図へジャンプ
         map.setView([lat, lng], 16);
         markerObjects[shopId].openPopup();
         document.getElementById('map-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
-        // 📥 期待値通り、位置情報が無い場合は詳細ポップアップ画面を起動
         openCustomModal(shop);
     }
 }
 
-/*** 📥 追加: カスタムポップアップ（モーダル窓）の制御
-*/
 function openCustomModal(shop) {
     document.getElementById('modal-shop-name').innerText = shop.name;
     
-    // 右上の編集ボタンにクリックアクションを設定
     const editBtn = document.getElementById('modal-edit-btn');
     editBtn.onclick = () => {
         closeCustomModal(null);
         editShop(shop.id);
     };
     
-    // 詳細本文の組み立て
     let bodyHtml = `
         <p><strong>📍 住所:</strong> ${escapeHtml(shop.address || '未設定')}</p>
+        ${shop.building ? `<p><strong>🏢 建物名:</strong> ${escapeHtml(shop.building)}</p>` : ''}
         <p><strong>💰 価格:</strong> ${escapeHtml(shop.price || '未設定')}</p>
         <p><strong>🏷️ 種類:</strong> ${escapeHtml(shop.genre || '未設定')}</p>
         <p><strong>📝 備考:</strong> ${escapeHtml(shop.memo || 'なし')}</p>
@@ -824,6 +823,7 @@ function renderPhotoPreviews() {
 async function saveRegisteredShop() {
     const name = document.getElementById('shop-name').value.trim();
     const address = document.getElementById('shop-address').value.trim();
+    const building = document.getElementById('shop-building').value.trim(); // 📥 ビル名取得
     const price = document.getElementById('shop-price').value.trim();
     const genre = document.getElementById('shop-genre').value.trim();
     const memo = document.getElementById('shop-memo').value.trim();
@@ -879,10 +879,20 @@ async function saveRegisteredShop() {
         }
     }
     
-    statusLabel.innerText = "⏳ 住所から位置情報を検索中...";
-    let lat = null;
-    let lng = null;
-    if (address) {
+    // 🛠️ 【バグ修正点】住所が書き換わったか、または新規登録なら必ず位置情報を検索する
+    let shouldGeocode = true;
+    if (id && appData.logs[id]) {
+        // 既存編集で、住所欄の文字が全く変わっていない場合のみ検索をスキップ（前の値を引き継ぐ）
+        if (appData.logs[id].address === address) {
+            shouldGeocode = false;
+        }
+    }
+
+    let lat = (id && appData.logs[id]) ? appData.logs[id].lat : null;
+    let lng = (id && appData.logs[id]) ? appData.logs[id].lng : null;
+
+    if (shouldGeocode && address) {
+        statusLabel.innerText = "⏳ 住所から位置情報を検索中...";
         try {
             const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
             if (geoRes.ok) {
@@ -890,6 +900,10 @@ async function saveRegisteredShop() {
                 if (geoData && geoData.length > 0) {
                     lat = parseFloat(geoData[0].lat);
                     lng = parseFloat(geoData[0].lon);
+                } else {
+                    // 検索したけど見つからなかった場合は明示的に null に戻す
+                    lat = null;
+                    lng = null;
                 }
             }
         } catch (e) {
@@ -899,17 +913,13 @@ async function saveRegisteredShop() {
     
     if (!id) {
         id = 'shop_' + Date.now();
-    } else {
-        if (!lat && appData.logs[id] && appData.logs[id].address === address) {
-            lat = appData.logs[id].lat;
-            lng = appData.logs[id].lng;
-        }
     }
     
     appData.logs[id] = {
         id: id,
         name: name,
         address: address,
+        building: building, // 📥 データへの保存
         price: price,
         genre: genre,
         memo: memo,
@@ -939,6 +949,7 @@ function editShop(id) {
     document.getElementById('edit-shop-id').value = shop.id;
     document.getElementById('shop-name').value = shop.name || '';
     document.getElementById('shop-address').value = shop.address || '';
+    document.getElementById('shop-building').value = shop.building || ''; // 📥 編集時にセット
     document.getElementById('shop-price').value = shop.price || '';
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-memo').value = shop.memo || '';
@@ -952,6 +963,7 @@ function clearForm() {
     document.getElementById('edit-shop-id').value = '';
     document.getElementById('shop-name').value = '';
     document.getElementById('shop-address').value = '';
+    document.getElementById('shop-building').value = ''; // 📥 クリア
     document.getElementById('shop-price').value = '';
     document.getElementById('shop-genre').value = '';
     document.getElementById('shop-memo').value = '';
