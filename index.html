@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (サムネ改善版)</title>
+<title>自分専用飲食店マップ (位置情報確実版)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
 :root {
@@ -98,7 +98,6 @@ button {
     margin-top: 10px;
 }
 
-/* 🎯 一覧用カードのレイアウト最適化 */
 .shop-list-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -119,7 +118,7 @@ button {
 }
 .shop-list-info {
     flex: 1;
-    min-width: 0; /* 文字あふれ防止 */
+    min-width: 0;
 }
 .shop-list-name {
     font-weight: bold;
@@ -146,7 +145,6 @@ button {
     text-overflow: ellipsis;
 }
 
-/* 🎯 サムネ画像表示エリアのコンパクト化とスライダー対応 */
 .shop-list-media-wrapper {
     position: relative;
     width: 65px;
@@ -164,23 +162,10 @@ button {
     border: 1px solid #eee;
     background: #fafafa;
 }
-/* スクロールバーを非表示にする（すっきり見せるため） */
-.shop-list-media-container::-webkit-scrollbar {
-    display: none;
-}
-.shop-list-media-container {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-.shop-list-thumb-item {
-    flex: 0 0 100%;
-    width: 100%;
-    height: 100%;
-    scroll-snap-align: start;
-    object-fit: cover;
-}
+.shop-list-media-container::-webkit-scrollbar { display: none; }
+.shop-list-media-container { -ms-overflow-style: none; scrollbar-width: none; }
+.shop-list-thumb-item { flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; object-fit: cover; }
 
-/* 複数画像がある場合の切り替え矢印ナビ */
 .thumb-nav-btn {
     position: absolute;
     top: 50%;
@@ -197,21 +182,13 @@ button {
     text-align: center;
     cursor: pointer;
     z-index: 10;
-    font-weight: normal;
 }
 .thumb-nav-prev { left: 2px; }
 .thumb-nav-next { right: 2px; }
 
-.no-data-msg {
-    text-align: center;
-    color: #999;
-    padding: 30px;
-    background: #f0f0f0;
-    border-radius: 12px;
-    font-size: 0.9rem;
-}
+.no-data-msg { text-align: center; color: #999; padding: 30px; background: #f0f0f0; border-radius: 12px; font-size: 0.9rem; }
 
-/* 住所サジェスト用のスタイル定義 */
+/* 🎯 住所サジェスト用のスタイル（見やすさをさらに強化） */
 .address-suggest-wrapper {
     position: relative;
 }
@@ -220,30 +197,44 @@ button {
     top: 100%;
     left: 0;
     width: 100%;
-    background: #fff;
-    border: 1px solid #ccc;
+    background: #ffffff;
+    border: 2px solid var(--primary-color);
     border-top: none;
     border-radius: 0 0 8px 8px;
-    max-height: 200px;
+    max-height: 220px;
     overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 2100;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    z-index: 5000; /* 地図より確実に前面に出す */
     display: none;
 }
 .suggest-box.active {
     display: block;
 }
 .suggest-item {
-    padding: 10px;
+    padding: 12px;
     cursor: pointer;
     border-bottom: 1px solid #eee;
     font-size: 0.9rem;
+    color: #333;
+    line-height: 1.4;
 }
 .suggest-item:hover {
-    background-color: #f0f4f9;
+    background-color: #e3f2fd;
+    color: var(--primary-color);
 }
 .suggest-item:last-child {
     border-bottom: none;
+}
+/* 検索中・エラー通知用のスタイル */
+.suggest-status {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    color: #666;
+    background: #f9f9f9;
+}
+.suggest-error {
+    color: var(--accent-color);
+    font-weight: bold;
 }
 
 .photo-upload-area {
@@ -269,35 +260,9 @@ button {
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     position: relative;
 }
-.preview-card img, .preview-card video {
-    width: 100%;
-    height: 90px;
-    object-fit: cover;
-    border-radius: 6px;
-}
-.preview-card .memo-input {
-    width: 100%;
-    font-size: 0.75rem;
-    padding: 4px;
-    margin-top: 5px;
-    box-sizing: border-box;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-.preview-card .btn-del-photo {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background: rgba(255,107,107,0.9);
-    color: white;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    padding: 0;
-    font-size: 11px;
-    line-height: 20px;
-    text-align: center;
-}
+.preview-card img, .preview-card video { width: 100%; height: 90px; object-fit: cover; border-radius: 6px; }
+.preview-card .memo-input { width: 100%; font-size: 0.75rem; padding: 4px; margin-top: 5px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 4px; }
+.preview-card .btn-del-photo { position: absolute; top: 2px; right: 2px; background: rgba(255,107,107,0.9); color: white; border-radius: 50%; width: 20px; height: 20px; padding: 0; font-size: 11px; line-height: 20px; text-align: center; }
 
 .popup-content h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: var(--primary-color); }
 .popup-content p { margin: 4px 0; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap; }
@@ -310,7 +275,7 @@ button {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5);
-    z-index: 2000;
+    z-index: 6000;
     justify-content: center;
     align-items: center;
 }
@@ -326,14 +291,7 @@ button {
     max-height: 80vh;
     overflow-y: auto;
 }
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-}
+.modal-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; }
 
 .filter-tab {
     display: none;
@@ -351,48 +309,17 @@ button {
     min-width: 150px;
 }
 .filter-tab.active { display: block; }
-.filter-item {
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 4px;
-}
+.filter-item { padding: 8px 12px; cursor: pointer; border-radius: 4px; }
 .filter-item:hover { background-color: #f0f0f0; }
 .filter-item.selected { background-color: #e3f2fd; color: var(--primary-color); font-weight: bold; }
 
-.form-group {
-    margin-bottom: 15px;
-}
-.form-group label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
-    font-size: 0.9rem;
-}
-.form-group label span {
-    color: var(--accent-color);
-    font-size: 0.8rem;
-    margin-left: 5px;
-}
-.form-control {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    box-sizing: border-box;
-    font-size: 1rem;
-}
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+.form-group label span { color: var(--accent-color); font-size: 0.8rem; margin-left: 5px; }
+.form-control { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
 textarea.form-control { height: 80px; resize: vertical; }
 
-.active-filter-indicator {
-    background: #e3f2fd;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    margin-bottom: 10px;
-    display: none;
-    justify-content: space-between;
-    align-items: center;
-}
+.active-filter-indicator { background: #e3f2fd; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; display: none; justify-content: space-between; align-items: center; }
 </style>
 </head>
 <body>
@@ -452,13 +379,14 @@ textarea.form-control { height: 80px; resize: vertical; }
             </div>
             
             <div class="form-group">
-                <label for="shop-address">住所 (※候補から選択すると緯度経度が自動固定されます)</label>
+                <label for="shop-address">住所 (※候補から選択するとピンが固定されます)<span>※必須</span></label>
                 <div class="address-suggest-wrapper">
-                    <input type="text" id="shop-address" class="form-control" placeholder="例) 福岡市中央区警固1-4-27" oninput="handleAddressInput(this.value)">
+                    <input type="text" id="shop-address" class="form-control" placeholder="文字を入力すると候補が出ます。例) 福岡市中央区警固" oninput="handleAddressInput(this.value)">
                     <div id="address-suggest-box" class="suggest-box"></div>
                 </div>
-                <input type="hidden" id="shop-lat">
-                <input type="hidden" id="shop-lng">
+                <input type="text" id="shop-lat" style="display:none;">
+                <input type="text" id="shop-lng" style="display:none;">
+                <div id="location-selected-badge" style="font-size:0.8rem; margin-top:4px; color:#27ae60; font-weight:bold; display:none;">🎯 位置情報の紐付け完了！</div>
             </div>
 
             <div class="form-group">
@@ -518,7 +446,7 @@ textarea.form-control { height: 80px; resize: vertical; }
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-// ⚠️ ご自身の情報を必ず指定してください
+// ⚠️ 【チェック1】必ずご自身のGitHub情報を指定してください
 let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
 const GITHUB_OWNER = "ここにあなたのGitHubユーザー名を入力";
 const GITHUB_REPO  = "ここにあなたのリポジトリ名を入力";
@@ -538,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initMap();
     loadFromSpreadsheet();
     
+    // タップでサジェスト枠を閉じる処理
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.address-suggest-wrapper')) {
             document.getElementById('address-suggest-box').classList.remove('active');
@@ -545,53 +474,83 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// 🎯 サジェスト取得処理の修正強化版
 function handleAddressInput(value) {
     const suggestBox = document.getElementById('address-suggest-box');
-    clearTimeout(suggestTimeout);
+    const badge = document.getElementById('location-selected-badge');
     
-    if (!value || value.trim().length < 3) {
+    clearTimeout(suggestTimeout);
+    badge.style.display = 'none'; // 入力し直したら一回バッジを消す
+    
+    // 入力が短い時は非表示
+    if (!value || value.trim().length < 2) {
         suggestBox.classList.remove('active');
         return;
     }
     
+    // 入力途中は「検索中...」と出す
+    suggestBox.innerHTML = '<div class="suggest-status">🔍 候補を検索中...</div>';
+    suggestBox.classList.add('active');
+    
     suggestTimeout = setTimeout(async () => {
-        const userAgent = "MyGourmetMapApp/6.0 (contact: map-app-user@example.com)";
+        // Nominatimのルール：一意のユーザーエージェントを付与する
+        const userAgent = "MyGourmetMapApp/7.0 (contact: map-app-owner@example.com)";
+        // 日本国内に絞って検索
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&countrycodes=jp&accept-language=ja&limit=6`;
+        
         try {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&countrycodes=jp&accept-language=ja&limit=5`;
-            const res = await fetch(url, { headers: { "User-Agent": userAgent } });
+            const res = await fetch(url, { 
+                method: "GET",
+                headers: { "User-Agent": userAgent } 
+            });
+            
             if (res.ok) {
                 const data = await res.json();
+                suggestBox.innerHTML = ''; // 検索中表示をクリア
+                
                 if (data && data.length > 0) {
-                    suggestBox.innerHTML = '';
                     data.forEach(item => {
                         const div = document.createElement('div');
                         div.className = 'suggest-item';
-                        div.innerText = item.display_name.replace(', Japan', '').replace('日本、', '');
-                        div.onclick = () => selectSuggestItem(div.innerText, item.lat, item.lon);
+                        // 「日本、」などの不要な国名表示をカットして綺麗にする
+                        let displayName = item.display_name.replace(', Japan', '').replace('日本、', '');
+                        div.innerText = displayName;
+                        
+                        // 候補をクリックしたときのイベントをバインド
+                        div.onclick = (e) => {
+                            e.stopPropagation();
+                            selectSuggestItem(displayName, item.lat, item.lon);
+                        };
                         suggestBox.appendChild(div);
                     });
-                    suggestBox.appendChild(div);
-                    suggestBox.classList.add('active');
                 } else {
-                    suggestBox.classList.remove('active');
+                    suggestBox.innerHTML = '<div class="suggest-status">該当する住所候補が見つかりません。別のキーワードを試してください。</div>';
                 }
+            } else {
+                suggestBox.innerHTML = `<div class="suggest-status suggest-error">❌ 検索サーバーエラー (ステータス:${res.status})</div>`;
             }
         } catch (e) {
-            console.error("サジェスト取得エラー:", e);
+            console.error("通信エラー:", e);
+            suggestBox.innerHTML = '<div class="suggest-status suggest-error">❌ 通信ブロックまたはオフラインです。手動で入力して登録してください。</div>';
         }
-    }, 400);
+    }, 500); // 0.5秒タイマー
 }
 
+// 🎯 候補選択時の処理
 function selectSuggestItem(fullAddress, lat, lng) {
-    document.getElementById('shop-address').value = fullAddress.trim();
+    document.getElementById('shop-address').value = fullAddress;
     document.getElementById('shop-lat').value = lat;
     document.getElementById('shop-lng').value = lng;
+    
+    // 成功バッジを表示
+    document.getElementById('location-selected-badge').style.display = 'block';
+    // 候補枠を閉じる
     document.getElementById('address-suggest-box').classList.remove('active');
 }
 
 function checkAndPromptGitHubToken() {
     if (!GITHUB_TOKEN) {
-        const token = prompt("GitHubの「個人アクセストークン(PAT)」を入力してください（ブラウザに記憶されます）:");
+        const token = prompt("GitHubのトークンを入力してください（ブラウザに記憶されます）:");
         if (token && token.trim() !== "") {
             localStorage.setItem('MY_GOURMET_MAP_PAT', token.trim());
             GITHUB_TOKEN = token.trim();
@@ -603,7 +562,7 @@ function checkAndPromptGitHubToken() {
 }
 
 function resetGitHubToken() {
-    const token = prompt("新しく設定するGitHubの「個人アクセストークン(PAT)」を入力してください:", GITHUB_TOKEN);
+    const token = prompt("新しく設定するGitHubのトークンを入力してください:", GITHUB_TOKEN);
     if (token !== null) {
         localStorage.setItem('MY_GOURMET_MAP_PAT', token.trim());
         GITHUB_TOKEN = token.trim();
@@ -676,9 +635,8 @@ function openNativeMapApp(address, building) {
     window.open(isIOS ? `maps://?q=${query}` : `geo:0,0?q=${query}`, '_blank');
 }
 
-// 🎯 サムネスライダーの切り替え用JavaScript
 function scrollThumb(btn, direction) {
-    event.stopPropagation(); // カードクリックの地図移動イベントを止める
+    event.stopPropagation();
     const container = btn.parentElement.querySelector('.shop-list-media-container');
     if(container) {
         const width = container.clientWidth;
@@ -743,17 +701,13 @@ function renderApp() {
         card.className = 'shop-list-card';
         card.setAttribute('onclick', `focusShopOnMap('${shop.id}', ${shop.lat}, ${shop.lng})`);
         
-        // 🎯 複数画像がある場合、スワイプ・クリックで切り替え可能なコンパクトスライダーを構築
         let mediaWrapperHtml = '';
         if (shop.files && shop.files.length > 0) {
             mediaWrapperHtml += `<div class="shop-list-media-wrapper">`;
-            
-            // 複数画像があるときだけナビ用の小さな矢印を表示
             if (shop.files.length > 1) {
                 mediaWrapperHtml += `<button class="thumb-nav-btn thumb-nav-prev" onclick="scrollThumb(this, -1)">◀</button>`;
                 mediaWrapperHtml += `<button class="thumb-nav-btn thumb-nav-next" onclick="scrollThumb(this, 1)">▶</button>`;
             }
-            
             mediaWrapperHtml += `<div class="shop-list-media-container">`;
             shop.files.forEach(f => {
                 if(f.type && f.type.startsWith('video/')) {
@@ -898,8 +852,9 @@ function renderPhotoPreviews() {
     });
 }
 
+// 🎯 バックアップ用のフォールバック自動検索
 async function fetchCoordinatesWithFallback(addressStr) {
-    const userAgent = "MyGourmetMapApp/6.0 (contact: map-app-user@example.com)";
+    const userAgent = "MyGourmetMapApp/7.0 (contact: map-app-owner@example.com)";
     try {
         const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr)}&countrycodes=jp&limit=1`;
         const res = await fetch(url, { headers: { "User-Agent": userAgent } });
@@ -920,10 +875,12 @@ async function saveRegisteredShop() {
     const memo = document.getElementById('shop-memo').value.trim();
     let id = document.getElementById('edit-shop-id').value;
     
+    // サジェスト選択、または以前の編集で取得した緯度経度
     let lat = document.getElementById('shop-lat').value ? parseFloat(document.getElementById('shop-lat').value) : null;
     let lng = document.getElementById('shop-lng').value ? parseFloat(document.getElementById('shop-lng').value) : null;
     
     if (!name) { alert("店名は必須入力です。"); return; }
+    if (!address) { alert("住所は必須入力です。"); return; }
     if (uploadedFiles.length > 0 && !checkAndPromptGitHubToken()) return;
     
     const submitBtn = document.getElementById('btn-submit-shop');
@@ -949,7 +906,9 @@ async function saveRegisteredShop() {
         }
     }
     
+    // 🎯 万が一サジェストが出ず、手動で入力して登録した場合は最後の砦として自動バックアップ検索を走らせる
     if (address && (!lat || !lng)) {
+        document.getElementById('sync-status').innerText = "⏳ 位置情報を最終検索中...";
         const coords = await fetchCoordinatesWithFallback(address);
         lat = coords.lat; lng = coords.lng;
     }
@@ -971,8 +930,14 @@ function editShop(id) {
     document.getElementById('shop-price').value = shop.price || '';
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-memo').value = shop.memo || '';
+    
     document.getElementById('shop-lat').value = shop.lat || '';
     document.getElementById('shop-lng').value = shop.lng || '';
+    
+    if (shop.lat && shop.lng) {
+        document.getElementById('location-selected-badge').style.display = 'block';
+    }
+    
     uploadedFiles = shop.files ? JSON.parse(JSON.stringify(shop.files)) : [];
     renderPhotoPreviews();
     map.closePopup();
@@ -988,6 +953,7 @@ function clearForm() {
     document.getElementById('shop-memo').value = '';
     document.getElementById('shop-lat').value = '';
     document.getElementById('shop-lng').value = '';
+    document.getElementById('location-selected-badge').style.display = 'none';
     uploadedFiles = [];
     document.getElementById('preview-zone').innerHTML = '';
 }
