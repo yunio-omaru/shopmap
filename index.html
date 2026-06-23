@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (自動保存対応版)</title>
+<title>自分専用飲食店マップ (接続エラー修正版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -293,6 +293,7 @@ textarea.form-control { height: 80px; resize: vertical; }
 
     <div id="sync-status" class="sync-status-bar">🔄 接続確認中...</div>
 
+    <!-- 🏠 メインメニュー画面 -->
     <div id="page-main" class="page active">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">📍 マイ飲食店マップ</h1>
@@ -347,6 +348,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
     </div>
 
+    <!-- ✍️ 店舗登録画面 -->
     <div id="page-register" class="page">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">✍️ 店舗登録</h1>
@@ -567,10 +569,14 @@ async function executeSave() {
 async function saveToSpreadsheet() {
     const statusLabel = document.getElementById('sync-status');
     statusLabel.innerText = "💾 クラウドに保存中...";
-    const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
-    if (res.ok) {
-        statusLabel.innerText = "✅ スプレッドシートに保存しました！";
-        return true;
+    try {
+        const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
+        if (res.ok) {
+            statusLabel.innerText = "✅ スプレッドシートに保存しました！";
+            return true;
+        }
+    } catch (e) {
+        console.error(e);
     }
     return false;
 }
@@ -715,7 +721,6 @@ function renderPhotoPreviews() {
     });
 }
 
-// 💡 登録時に自動保存を実行するように機能変更
 async function saveRegisteredShop() {
     const name = document.getElementById('shop-name').value.trim();
     const address = document.getElementById('shop-address').value.trim();
@@ -735,7 +740,6 @@ async function saveRegisteredShop() {
     const statusLabel = document.getElementById('sync-status');
     statusLabel.innerText = "🚀 GitHubへ写真を保存中...";
     
-    // 写真のGitHubアップロード
     for (const file of uploadedFiles) {
         if (!file.isGitHubUploaded && file.data.includes(',')) {
             const cleanBase64 = file.data.split(',')[1]; 
@@ -757,19 +761,18 @@ async function saveRegisteredShop() {
     
     if (!id) id = 'shop_' + Date.now();
     
-    // アプリ内データの更新
     appData.logs[id] = { id, name, address, building, area, price, genre, memo, lat: null, lng: null, files: [...uploadedFiles] };
     
-    // 🌟 【ココが重要】店舗データを追加した直後に、自動でスプレッドシートへ強制保存を走らせる
     statusLabel.innerText = "💾 クラウド（スプレッドシート）へ自動保存中...";
     const isSaved = await saveToSpreadsheet();
     
     submitBtn.disabled = false;
+    submitBtn.innerText = "登録";
     if(isSaved) {
         renderApp();
         switchPage('main');
     } else {
-        alert("スプレッドシートへの自動保存に失敗しました。もう一度登録を試すか、電波状況を確認してください。");
+        alert("スプレッドシートへの自動保存に失敗しました。電波状況を確認してください。");
     }
 }
 
@@ -831,7 +834,7 @@ function updateFilterBarDisplay() {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, ''');
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 </script>
 </body>
