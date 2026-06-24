@@ -356,11 +356,9 @@ async function loadFromGitHub() {
     const statusLabel = document.getElementById('sync-status');
     statusLabel.innerText = "🔄 GitHubから最新データをロード中...";
     
-    // 💡 キャッシュを強制的に回避するためのランダムな数値を生成
     const cacheBuster = Date.now();
     
     try {
-        // URLの末尾に `?t=タイムスタンプ` を付与して、ブラウザの古い記憶を破壊する
         const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}&t=${cacheBuster}`, {
             headers: { 
                 'Authorization': `token ${GITHUB_TOKEN}`,
@@ -386,11 +384,14 @@ async function loadFromGitHub() {
             statusLabel.innerText = "📂 GitHubにファイルがまだ無いため、スプシから引き継ぎます...";
             await loadFromSpreadsheetBackup(true); 
         } else {
-            throw new Error("GitHub通信エラー Status: " + res.status);
+            // 💡 401(認証エラー)や403(制限)などの具体的なステータスをエラーとして投げる
+            throw new Error(`GitHubがアクセスを拒否しました (Code: ${res.status})`);
         }
     } catch (e) {
         console.error(e);
-        statusLabel.innerText = "⚠️ GitHub接続エラー。スプシから代替読込を試みます...";
+        // 💡 画面上の警告帯に、スプシに行く前の「本当の理由」を表示する
+        statusLabel.className = "sync-status-bar error";
+        statusLabel.innerText = `⚠️ ${e.message}。スプシから代替読込します...`;
         await loadFromSpreadsheetBackup(false);
     }
 }
