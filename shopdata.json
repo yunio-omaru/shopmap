@@ -264,30 +264,14 @@
       "name": "ころしのカレー",
       "address": "〒818-0072 福岡県筑紫野市二日市中央４丁目１２−５",
       "building": "",
+      "url": "",
       "area": "筑紫野",
       "price": "~1000",
       "genre": "ランチ、ディナー、カレー",
       "memo": "変わらずのおいしさ",
       "lat": null,
       "lng": null,
-      "files": [
-        {
-          "name": "森の中の木の通路幻想的.jpg",
-          "type": "image/jpeg",
-          "data": "https://raw.githubusercontent.com/yunio-omaru/shopmap/refs/heads/main/shops/Restaurant/ころしのカレー/thumb_1782281174791_森の中の木の通路幻想的.jpg.webp",
-          "memo": "削除用",
-          "isGitHubUploaded": true,
-          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/refs/heads/main/shops/Restaurant/ころしのカレー/1782281174791_森の中の木の通路幻想的.jpg"
-        },
-        {
-          "name": "IMG_6545.png",
-          "type": "image/png",
-          "data": "https://raw.githubusercontent.com/yunio-omaru/shopmap/refs/heads/main/shops/Restaurant/ころしのカレー/thumb_1782322906551_IMG_6545.png.jpg",
-          "memo": "削除",
-          "isGitHubUploaded": true,
-          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/refs/heads/main/shops/Restaurant/ころしのカレー/1782322906551_IMG_6545.png"
-        }
-      ]
+      "files": []
     },
     "shop_1782280864591": {
       "id": "shop_1782280864591",
@@ -323,7 +307,7 @@
       "building": "",
       "url": "092-282-3393",
       "area": "博多",
-      "price": "",
+      "price": "1000〜1500",
       "genre": "フレンチ、ランチ",
       "memo": "ランチは電話予約必須\nハンバーグうまい",
       "lat": null,
