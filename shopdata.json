@@ -369,6 +369,28 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "shop_1782330011172": {
+      "id": "shop_1782330011172",
+      "type": "観光地",
+      "name": "甲尾山公園の風車",
+      "address": "〒879-1307 大分県杵築市山香町大字野原８７９",
+      "building": "",
+      "url": "",
+      "area": "",
+      "price": "",
+      "genre": "建物、風景",
+      "memo": "",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": [
+        {
+          "date": "",
+          "memo": "家族旅行",
+          "files": []
+        }
+      ]
     }
   },
   "master": {}
