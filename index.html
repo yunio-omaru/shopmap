@@ -197,7 +197,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
 
         <div id="main-google-map" class="main-map-container">
-            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=福岡市&z=12&output=embed"></iframe>
+            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed"></iframe>
         </div>
 
         <div id="focused-shop-panel" class="focused-shop-panel">
@@ -542,9 +542,9 @@ function focusShop(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
     
-    // 💡 修正箇所: ?q= パラメータを正しく設定し、ビル名も含めてピン留め
-    const mapQuery = shop.address + (shop.building ? ' ' + shop.building : '');
-    document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=16&output=embed`;
+    // 💡 修正箇所1: ビル名を除去し「住所のみ」でクエリ生成。さらに文字化け対策で文字列を完全固定
+    const mapQuery = shop.address;
+    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=" + encodeURIComponent(mapQuery) + "&z=16&output=embed";
     
     document.getElementById('focused-name').innerText = shop.name;
     document.getElementById('focused-address').innerText = shop.address;
@@ -587,9 +587,10 @@ function focusShop(shopId) {
 }
 
 function openNativeMapApp(address, building) {
-    const query = encodeURIComponent(address + (building ? ' ' + building : ''));
+    // ネイティブアプリ側も住所単体の方が確実
+    const query = encodeURIComponent(address);
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    window.open(isIOS ? `maps://?q=${query}` : `https://maps.google.com/maps?q=${query}`, '_blank');
+    window.open(isIOS ? "maps://?q=" + query : "https://maps.google.com/maps?q=" + query, '_blank');
 }
 
 function switchPage(pageName) {
@@ -795,11 +796,12 @@ function setFilter(type, value) {
     if (type === 'area' && value) {
         let word = "";
         const target = Object.values(appData.logs).find(s => s && s.address && (s.area === value || isAreaMatch(s.area, value)));
-        word = target ? target.address : (value.includes("福岡") ? value : `福岡県 ${value}`);
-        // 💡 修正箇所: 標準的な埋め込み形式（?q=）に変更
-        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(word)}&z=14&output=embed`;
+        word = target ? target.address : (value.includes("福岡") ? value : "福岡県 " + value);
+        
+        // 💡 修正箇所2: 文字化けを完全に排除したURL組み立て
+        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=" + encodeURIComponent(word) + "&z=14&output=embed";
     } else if (!currentFilters.area) {
-        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡市&z=12&output=embed";
+        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
     }
     renderApp(); 
 }
@@ -807,7 +809,7 @@ function setFilter(type, value) {
 function clearFilter() { 
     currentFilters.area = ''; currentFilters.price = ''; currentFilters.genre = ''; 
     document.getElementById('focused-shop-panel').style.display = 'none';
-    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡市&z=12&output=embed";
+    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
     renderApp(); 
 }
 
