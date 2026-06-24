@@ -356,9 +356,17 @@ async function loadFromGitHub() {
     const statusLabel = document.getElementById('sync-status');
     statusLabel.innerText = "🔄 GitHubから最新データをロード中...";
     
+    // 💡 キャッシュを強制的に回避するためのランダムな数値を生成
+    const cacheBuster = Date.now();
+    
     try {
-        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}`, {
-            headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Cache-Control': 'no-cache' }
+        // URLの末尾に `?t=タイムスタンプ` を付与して、ブラウザの古い記憶を破壊する
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}&t=${cacheBuster}`, {
+            headers: { 
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache'
+            }
         });
         
         if (res.status === 200) {
@@ -375,7 +383,6 @@ async function loadFromGitHub() {
             unlockUI();
             renderApp();
         } else if (res.status === 404) {
-            // 💡 ここを強化：404でもファイルが無いだけと判断し、スプシからデータを引き継いで読み込みを完了させる
             statusLabel.innerText = "📂 GitHubにファイルがまだ無いため、スプシから引き継ぎます...";
             await loadFromSpreadsheetBackup(true); 
         } else {
