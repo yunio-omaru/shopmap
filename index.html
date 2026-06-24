@@ -382,29 +382,33 @@ function unlockUI() {
 // 💡 422エラー対策：保存前にGitHubから最新のJSON内容と最新SHAを100%確実に同期する関数
 async function syncAndFetchLatestGitHubData() {
     try {
+        // キャッシュを完全に破壊するために一意のクエリパラメータを付与
         const cacheBuster = Date.now();
         const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}&t=${cacheBuster}`, {
             headers: { 
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
+                'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             }
         });
         if (res.status === 200) {
             const fileInfo = await res.json();
-            currentJsonSha = fileInfo.sha; // 最新のSHAを取得
+            currentJsonSha = fileInfo.sha; // 最新のSHAを確実に取得
             
-            // 既存のJSONデータの中身をデコードして読み込む（既存データを完全に保持する）
+            // 既存のJSONデータの中身をデコードして読み込む（日本語対応）
             if (fileInfo.content) {
-                const decodedJson = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g, ''))));
+                const b64Decoded = atob(fileInfo.content.replace(/\s/g, ''));
+                const binData = new Uint8Array([...b64Decoded].map(c => c.charCodeAt(0)));
+                const decodedJson = new TextDecoder('utf-8').decode(binData);
+                
                 const latestData = JSON.parse(decodedJson);
                 if (latestData && latestData.logs) {
                     appData.logs = Object.assign({}, appData.logs, latestData.logs); // マージして保持
                 }
             }
         } else if (res.status === 404) {
-            // まだGitHub側にファイルがない場合は新規作成扱いに（SHAは空）
-            currentJsonSha = "";
+            currentJsonSha = ""; // まだファイルがない場合は空にする
         }
     } catch (e) {
         console.error("GitHubからの最新データ同期失敗:", e);
@@ -433,15 +437,14 @@ async function saveRegisteredShop() {
     statusLabel.className = "sync-status-bar";
     statusLabel.innerText = "🚀 GitHub上の既存データを確認中...";
     
-    // 💡 【超重要】保存直前に、GitHub上にある既存のjsonファイル構造とSHAキーを強制的に最新に同期
+    // 【最重要】保存直前に、最新のファイル状態とSHAキーを強制同期（キャッシュ回避）
     await syncAndFetchLatestGitHubData();
     
     const timestamp = Date.now();
     let targetId = id;
 
-    // 💡 店舗名重複チェックロジック
+    // 店舗名重複チェック
     if (!targetId) {
-        // 新規登録の場合：既存データ内から同一店舗名を探す
         const existingShop = Object.values(appData.logs).find(shop => shop && shop.name === name);
         if (existingShop) {
             const proceed = confirm("同一店舗名があります。上書きしてもよろしいでしょうか。");
@@ -451,14 +454,10 @@ async function saveRegisteredShop() {
                 statusLabel.innerText = "✅ 保存をキャンセルしました。";
                 return;
             }
-            // 上書きOKの場合は、既存店舗のIDを指定（対象の店舗記載の部分を修正・上書き）
             targetId = existingShop.id;
         } else {
-            // 重複がない場合は新規にIDを発行して末尾に追加
             targetId = 'shop_' + timestamp;
         }
-    } else {
-        // 修正（編集）の場合：既存の targetId をそのまま使用して該当部分を書き換え
     }
     
     statusLabel.innerText = "🚀 GitHubへ写真とデータをアップロード中...";
@@ -499,30 +498,38 @@ async function saveRegisteredShop() {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
-    // アプリ内データの更新（特定の店舗記載部分のみ追加・修正）
+    // アプリ内データの更新
     appData.logs[targetId] = { id: targetId, name, address, building, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
     
     try {
         const jsonString = JSON.stringify(appData, null, 2);
-        const base64Json = btoa(unescape(encodeURIComponent(jsonString)));
+        
+        // ✨ 日本語（マルチバイト）を安全にBase64エンコードする現代的な処理
+        const encoder = new TextEncoder();
+        const u8arr = encoder.encode(jsonString);
+        const binString = String.fromCharCode(...u8arr);
+        const base64Json = btoa(binString);
         
         const putBody = {
             message: `Update shop_data.json - ${name}`,
             content: base64Json,
             branch: GITHUB_BRANCH
         };
-        // 💡 取得した最新のSHAキーがある場合は必ずリクエストに付与（これで422エラーを防ぐ）
-        if (currentJsonSha) putBody.sha = currentJsonSha;
+        
+        // SHAキーが正しく取得できている場合のみ付与、空文字なら付与しない
+        if (currentJsonSha && currentJsonSha.trim() !== "") {
+            putBody.sha = currentJsonSha;
+        }
         
         const githubRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}`, {
             method: 'PUT',
-            headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+            headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(putBody)
         });
         
         if(githubRes.ok) {
-            const resData = await githubRes.json();
-            currentJsonSha = resData.content.sha; 
+            const resData = await githubRes.ok ? await githubRes.json() : null;
+            if (resData && resData.content) currentJsonSha = resData.content.sha; 
             
             statusLabel.innerText = "☁️ GitHub自動保存完了！ 続けてスプレッドシートに同期中...";
             
