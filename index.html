@@ -121,7 +121,7 @@ button:disabled {
 .diary-item { position: relative; margin-bottom: 20px; }
 .diary-item::before { content: ''; position: absolute; left: -22px; top: 3px; width: 10px; height: 10px; background: var(--primary-color); border-radius: 50%; }
 .diary-date { font-weight: bold; color: var(--primary-color); font-size: 0.95rem; margin-bottom: 4px; }
-.diary-memo { font-size: 0.9rem; color: #333; background: #f9f9f9; padding: 8px; border-radius: 6px; white-space: pre-wrap; }
+.diary-memo { font-size: 0.9rem; color: #333; background: #f9f9f9; padding: 8px; border-radius: 6px; white-space: pre-wrap; margin-bottom: 10px; }
 
 .list-section-title { font-size: 1.1rem; font-weight: bold; margin: 20px 0 10px 0; color: #555; }
 .shop-list-container { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
@@ -508,7 +508,7 @@ async function handleVisitFileSelect(event, index) {
         if (file.type && file.type.startsWith('image/')) {
             try { base64Display = await compressImage(base64Original, 800, 0.75); } catch (e) {}
         }
-        otherVisitsData[index].files.push({ name: file.name, type: file.type, data: base64Display, originalData: base64Original, isGitHubUploaded: false, githubUrl: '' });
+        otherVisitsData[index].files.push({ name: file.name, type: file.type, data: base64Display, originalData: base64Original, memo: '', isGitHubUploaded: false, githubUrl: '' });
     }
     renderVisitPhotoPreviews(index);
     event.target.value = '';
@@ -523,6 +523,13 @@ function renderVisitPhotoPreviews(index) {
         card.className = 'preview-card';
         card.innerHTML = file.type && file.type.startsWith('video/') ? `<video src="${file.githubUrl || file.data}" controls></video>` : `<img src="${file.githubUrl || file.data}">`;
         
+        // 💡 その他マップの写真動画用のメモ入力欄を追加
+        const input = document.createElement('input');
+        input.type = 'text'; input.className = 'memo-input'; input.placeholder = '写真のメモ';
+        input.value = file.memo || '';
+        input.onchange = (e) => { otherVisitsData[index].files[fIdx].memo = e.target.value; };
+        card.appendChild(input);
+
         const delBtn = document.createElement('button');
         delBtn.className = 'btn-del-photo'; delBtn.innerHTML = '×';
         delBtn.onclick = () => { otherVisitsData[index].files.splice(fIdx, 1); renderVisitPhotoPreviews(index); };
@@ -962,8 +969,10 @@ function focusShopOnPanel(shopId) {
                     mediaHtml += `<div class="focused-media-grid" style="display:grid; margin-bottom:10px;">`;
                     visit.files.forEach(file => {
                         const src = file.githubUrl || file.data;
+                        // 💡 その他マップでも写真動画の上に個別メモ（💬）を表示
                         mediaHtml += `
                             <div class="focused-media-card">
+                                <div class="focused-media-memo">💬 ${escapeHtml(file.memo || ' ')}</div>
                                 ${file.type && file.type.startsWith('video/') ? `<video src="${src}" controls></video>` : `<img src="${src}" onclick="window.open('${src}','_blank')">`}
                             </div>`;
                     });
@@ -1116,7 +1125,7 @@ function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
-    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近微含む）":""}`);
+    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近隣含む）":""}`);
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
     
@@ -1220,7 +1229,7 @@ function compressImage(base64Str, maxWidth = 800, quality = 0.75) {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, '&#039;');
+    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, "'");
 }
 </script>
 </body>
