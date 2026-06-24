@@ -17,12 +17,14 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg-color); 
     color: var(--text-color); 
-    margin: 0; \n    padding: 0;
+    margin: 0; 
+    padding: 0;
 }
 .container { 
     max-width: 800px; 
     margin: 0 auto; 
-    padding: 15px; \n    box-sizing: border-box; 
+    padding: 15px; 
+    box-sizing: border-box; 
 }
 header { 
     display: flex; 
@@ -31,14 +33,16 @@ header {
     background: var(--card-bg); 
     padding: 12px 15px; 
     border-radius: 12px; 
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04); \n    margin-bottom: 10px; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+    margin-bottom: 10px; 
 }
 h1 { font-size: 18px; margin: 0; color: #2c3e50; font-weight: 700; }
 .btn-nav { 
     background: var(--primary-color); 
     color: white; 
     border: none; 
-    padding: 8px 16px; \n    border-radius: 20px; 
+    padding: 8px 16px; 
+    border-radius: 20px; 
     font-size: 13px; 
     cursor: pointer; 
     font-weight: bold;
@@ -47,7 +51,8 @@ h1 { font-size: 18px; margin: 0; color: #2c3e50; font-weight: 700; }
 .sync-status-bar { 
     font-size: 11px; 
     text-align: center; 
-    padding: 4px 10px; \n    background: #e2e8f0; 
+    padding: 4px 10px; 
+    background: #e2e8f0; 
     color: #4a5568; 
     border-radius: 6px; 
     margin-bottom: 15px; 
@@ -63,7 +68,8 @@ h1 { font-size: 18px; margin: 0; color: #2c3e50; font-weight: 700; }
     width: 100%; 
     height: 240px; 
     border-radius: 12px; 
-    overflow: hidden; \n    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+    overflow: hidden; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
     margin-bottom: 15px; 
     background: #e5e7eb;
 }
@@ -84,7 +90,8 @@ h1 { font-size: 18px; margin: 0; color: #2c3e50; font-weight: 700; }
     padding: 8px 12px; 
     border-radius: 8px; 
     font-size: 13px; 
-    cursor: pointer; \n    text-align: center;
+    cursor: pointer; 
+    text-align: center;
 }
 .filter-tab { 
     display: none; 
@@ -123,7 +130,8 @@ h1 { font-size: 18px; margin: 0; color: #2c3e50; font-weight: 700; }
     background: none; 
     border: none; 
     color: var(--accent-color); 
-    cursor: pointer; \n    font-weight: bold; 
+    cursor: pointer; 
+    font-weight: bold; 
 }
 
 .shop-list-zone { display: flex; flex-direction: column; gap: 12px; }
@@ -133,7 +141,8 @@ h1 { font-size: 18px; margin: 0; color: #2c3e50; font-weight: 700; }
     border-radius: 12px; 
     overflow: hidden;
     box-shadow: 0 1px 5px rgba(0,0,0,0.03); 
-    border: 1px solid rgba(0,0,0,0.02); \n    cursor: pointer; 
+    border: 1px solid rgba(0,0,0,0.02); 
+    cursor: pointer; 
     height: 90px;
 }
 .shop-list-info { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
@@ -148,7 +157,8 @@ h1 { font-size: 18px; margin: 0; color: #2c3e50; font-weight: 700; }
 .shop-list-thumb-item { width: 90px; height: 90px; object-fit: cover; scroll-snap-align: start; flex-shrink: 0; }
 .thumb-nav-btn { 
     position: absolute; top: 50%; transform: translateY(-50%); 
-    background: rgba(0,0,0,0.4); color: white; border: none; \n    width: 18px; height: 18px; 
+    background: rgba(0,0,0,0.4); color: white; border: none; 
+    width: 18px; height: 18px; 
     border-radius: 50%; font-size: 9px; padding: 0; cursor: pointer; z-index: 2;
 }
 .thumb-nav-prev { left: 2px; } .thumb-nav-next { right: 2px; }
@@ -399,7 +409,7 @@ function unlockUI() {
     document.getElementById('btn-submit-shop').disabled = false;
 }
 
-// 💡 修正①：Base64のパースエラーを完璧に防ぎ、SHAを確実にキープする関数
+// 🗺️ 最新のSHAキー取得処理（パースエラーに強く、確実にキープする）
 async function syncAndFetchLatestGitHubData() {
     try {
         const cacheBuster = Date.now();
@@ -415,12 +425,11 @@ async function syncAndFetchLatestGitHubData() {
         if (res.status === 200) {
             const fileInfo = await res.json();
             
-            // 🛑 例外が起きる前に、まず確実にSHAをグローバル変数に格納する
+            // 何があってもまず確実にSHAをグローバルに確保
             if (fileInfo && fileInfo.sha) {
                 currentJsonSha = fileInfo.sha;
             }
 
-            // 既存のJSONデータの中身を安全にデコードして読み込む（隙間の空白文字を全除去）
             if (fileInfo && fileInfo.content) {
                 try {
                     const b64Decoded = atob(fileInfo.content.replace(/\s/g, ''));
@@ -432,20 +441,20 @@ async function syncAndFetchLatestGitHubData() {
                         appData.logs = Object.assign({}, appData.logs, latestData.logs); 
                     }
                 } catch (parseError) {
-                    console.error("既存JSONのデコードまたはパースに失敗しました（SHAはキープします）:", parseError);
+                    console.error("既存JSONの同期解析に失敗（SHAは維持）:", parseError);
                 }
             }
         } else if (res.status === 404) {
-            currentJsonSha = ""; // まだファイルがない場合は新規作成
+            currentJsonSha = ""; 
         } else {
-            console.error(`GitHubからのデータ取得に失敗。ステータス: ${res.status}`);
+            console.error(`GitHubデータ同期スキップ（ステータス: ${res.status}）`);
         }
     } catch (e) {
-        console.error("GitHubからの最新データ同期中に致命的な失敗:", e);
+        console.error("GitHub同期中にエラー:", e);
     }
 }
 
-// 💡 修正②：Bearer認証の統一、およびデータ送信処理の安定化
+// 🛡️ 最適化された店舗保存処理（通信の競合を完全に回避）
 async function saveRegisteredShop() {
     if (!isDataLoaded) { alert("データのロードが完了していないため、登録できません。"); return; }
     
@@ -466,10 +475,6 @@ async function saveRegisteredShop() {
     submitBtn.disabled = true; submitBtn.innerText = "⏳ 保存中...";
     const statusLabel = document.getElementById('sync-status');
     statusLabel.className = "sync-status-bar";
-    statusLabel.innerText = "🚀 GitHub上の既存データを確認中...";
-    
-    // 保存直前に、GitHub上にある既存 of jsonファイル構造とSHAキーを同期
-    await syncAndFetchLatestGitHubData();
     
     const timestamp = Date.now();
     let targetId = id;
@@ -490,9 +495,9 @@ async function saveRegisteredShop() {
         }
     }
     
-    statusLabel.innerText = "🚀 GitHubへ写真とデータをアップロード中...";
+    statusLabel.innerText = "🚀 GitHubへ写真とメディアをアップロード中...";
     
-    // 写真のアップロード処理
+    // 💥 最初に時間のかかる写真アップロード処理をすべて終わらせる
     for (const file of uploadedFiles) {
         if (file.isGitHubUploaded || (file.data && file.data.startsWith('http'))) {
             file.isGitHubUploaded = true;
@@ -528,12 +533,17 @@ async function saveRegisteredShop() {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
+    // ローカルデータの確定
     appData.logs[targetId] = { id: targetId, name, address, building, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
+    
+    statusLabel.innerText = "🚀 保存直前のリポジトリ最新状態をチェック中...";
+    
+    // 🌟【最重要】JSON送信の「直前」に最新のSHAを強制同期してキープ！
+    await syncAndFetchLatestGitHubData();
     
     try {
         const jsonString = JSON.stringify(appData, null, 2);
         
-        // 日本語（マルチバイト文字）を安全にBase64化する現代的な処理
         const encoder = new TextEncoder();
         const u8arr = encoder.encode(jsonString);
         const binString = String.fromCharCode(...u8arr);
@@ -582,7 +592,7 @@ async function saveRegisteredShop() {
     }
 }
 
-// 💡 修正③：取り残されていた「写真アップロード用」の認証ヘッダーもBearerに統一
+// 🗺️ メディアファイルアップロード用（Bearer認証）
 async function uploadToGitHubFile(path, base64Data) {
     if (!base64Data || !base64Data.includes(',')) {
         throw new Error("無効なBase64データです。");
@@ -903,7 +913,7 @@ function updateFilterBarDisplay() {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 </script>
 </body>
