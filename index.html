@@ -365,9 +365,9 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnR
 
 let appData = { logs: {}, master: {} };
 let currentFilters = { area: '', price: '', genre: '' };
-let currentMapType = 'restaurant'; // 💡 現在表示しているマップ種別 ('restaurant' or 'other')
+let currentMapType = 'restaurant'; // 現在表示しているマップ種別 ('restaurant' or 'other')
 let uploadedFiles = []; 
-let otherVisitsData = []; // 💡 飲食店以外の訪問履歴（日記データ）を一時保持する配列
+let otherVisitsData = []; // 飲食店以外の訪問履歴（日記データ）を一時保持する配列
 let isDataLoaded = false; 
 
 const NEIGHBOR_AREAS = {
@@ -438,14 +438,12 @@ function unlockUI() {
     document.getElementById('btn-github-json-save').disabled = false;
 }
 
-/* 💡 マップ種別の切り替え処理 */
 function switchMapType() {
     currentMapType = document.getElementById('map-type-selector').value;
     document.getElementById('focused-shop-panel').style.display = 'none';
     renderApp();
 }
 
-/* 💡 種別入力欄に応じたフォームの切り替え */
 function toggleRegisterFormFields() {
     const typeValue = document.getElementById('shop-type').value.trim();
     if (typeValue === '飲食店' || !typeValue) {
@@ -455,12 +453,11 @@ function toggleRegisterFormFields() {
         document.getElementById('fields-for-restaurant').style.display = 'none';
         document.getElementById('fields-for-other-diary').style.display = 'block';
         if (otherVisitsData.length === 0) {
-            addVisitRecordRow(); // 💡 初期行を1つ追加
+            addVisitRecordRow(); 
         }
     }
 }
 
-/* 💡 その他マップ用：日記レコード行の動的追加 */
 function addVisitRecordRow(existingData = null) {
     const container = document.getElementById('visit-records-container');
     const index = otherVisitsData.length;
@@ -495,7 +492,7 @@ function addVisitRecordRow(existingData = null) {
 }
 
 function removeVisitRecordRow(index) {
-    otherVisitsData[index] = null; // 論理削除
+    otherVisitsData[index] = null; 
     document.getElementById(`visit-row-${index}`).remove();
 }
 
@@ -523,7 +520,6 @@ function renderVisitPhotoPreviews(index) {
         card.className = 'preview-card';
         card.innerHTML = file.type && file.type.startsWith('video/') ? `<video src="${file.githubUrl || file.data}" controls></video>` : `<img src="${file.githubUrl || file.data}">`;
         
-        // 💡 その他マップの写真動画用のメモ入力欄を追加
         const input = document.createElement('input');
         input.type = 'text'; input.className = 'memo-input'; input.placeholder = '写真のメモ';
         input.value = file.memo || '';
@@ -605,7 +601,6 @@ async function saveJsonToGitHub() {
     }
 }
 
-/* 💡 店舗データの新規追加・編集確定の保存処理 */
 async function saveRegisteredShop() {
     const submitBtn = document.getElementById('btn-submit-shop');
     const statusLabel = document.getElementById('sync-status');
@@ -630,7 +625,6 @@ async function saveRegisteredShop() {
     statusLabel.className = "sync-status-bar";
     statusLabel.innerText = "🚀 保存処理を開始します...";
 
-    // エリア自動推定
     if (!area) {
         for (const item of AUTO_AREA_KEYWORDS) {
             if (item.match.some(m => address.includes(m))) {
@@ -643,7 +637,6 @@ async function saveRegisteredShop() {
     const timestamp = Date.now();
     const targetId = editId ? editId : "ID_" + timestamp;
 
-    // 画像・動画のアップロード要否のチェック
     let hasNewMedia = false;
     if (type === '飲食店') {
         hasNewMedia = uploadedFiles.some(file => !file.isGitHubUploaded && (file.data && file.data.includes(',')));
@@ -670,16 +663,13 @@ async function saveRegisteredShop() {
         statusLabel.innerText = "🚀 GitHubへ写真・動画をアップロード中...";
     }
 
-    // 💡 データの保存処理を分岐
     let finalFiles = [];
     let finalVisits = [];
     let memo = "";
 
-    // 💡 保存先フォルダのベースパスを種別によって自動分岐
     const folderBase = (type === '飲食店') ? 'Restaurant' : 'etc';
 
     if (type === '飲食店') {
-        // 🍔 既存の飲食店アップロードフロー
         for (const file of uploadedFiles) {
             if (file.isGitHubUploaded || (file.data && file.data.startsWith('http'))) {
                 file.isGitHubUploaded = true;
@@ -705,7 +695,6 @@ async function saveRegisteredShop() {
         memo = document.getElementById('shop-memo').value;
 
     } else {
-        // ⛰️ その他マップ用の日記配列構築フロー
         const validRows = otherVisitsData.filter(v => v !== null);
         for (let v of validRows) {
             let visitFiles = [];
@@ -721,11 +710,16 @@ async function saveRegisteredShop() {
                         const origPath = `shops/${folderBase}/${name}/${timestamp}_${file.name}`;
                         const origUrl = await uploadToGitHubFile(origPath, targetOrigData);
                         
-                        file.githubUrl = origUrl;
-                        file.data = ""; 
-                        file.originalData = ""; 
-                        file.isGitHubUploaded = true;
-                        visitFiles.push(file);
+                        // 動画情報を含む全てのパラメータを新しいオブジェクトに引き継ぐ
+                        visitFiles.push({
+                            name: file.name,
+                            type: file.type,
+                            memo: file.memo || '',
+                            githubUrl: origUrl,
+                            data: "",
+                            originalData: "",
+                            isGitHubUploaded: true
+                        });
                     } catch (e) {
                         console.error("その他マップメディアアップロード失敗:", e);
                     }
@@ -737,16 +731,14 @@ async function saveRegisteredShop() {
                 files: visitFiles
             });
         }
-        // 日記データを日付の新しい順に並び替え
         finalVisits.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        // その他マップの場合、一番直近の写真1枚をメインサムネイルにする
+        // メイン一覧用のサムネイルをセット（直近の訪問記録の1枚目）
         if (finalVisits.length > 0 && finalVisits[0].files.length > 0) {
             finalFiles = [finalVisits[0].files[0]];
         }
     }
 
-    // 💡 データ構造を決定してマージ
     appData.logs[targetId] = {
         id: targetId, type, name, address, building, url, area, price, genre, memo,
         lat: appData.logs[targetId]?.lat || null,
@@ -804,13 +796,11 @@ async function uploadToGitHubFile(path, base64Data) {
     return resData.content.download_url; 
 }
 
-/* 💡 メイン画面アプリレンダリングロジック */
 function renderApp() {
     const listZone = document.getElementById('shop-list-zone');
     listZone.innerHTML = '';
 
     const shops = Object.values(appData.logs || {});
-    // 現在のマップ種別 (飲食店 or その他) に応じてフィルタ
     let targetShops = shops.filter(shop => {
         if (currentMapType === 'restaurant') {
             return shop.type === '飲食店' || !shop.type;
@@ -819,7 +809,6 @@ function renderApp() {
         }
     });
 
-    // 検索・絞り込みフィルタの適用
     if (currentFilters.area) {
         const neighbors = NEIGHBOR_AREAS[currentFilters.area] || [currentFilters.area];
         targetShops = targetShops.filter(s => neighbors.includes(s.area));
@@ -840,7 +829,6 @@ function renderApp() {
         return;
     }
 
-    // 表示用にソート（店名順）
     targetShops.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
     targetShops.forEach(shop => {
@@ -894,14 +882,13 @@ function renderApp() {
 }
 
 function scrollThumb(shopId, direction, event) {
-    event.stopPropagation(); // カードクリックの波及防止
+    event.stopPropagation(); 
     const container = document.getElementById(`thumb-container-${shopId}`);
     if (!container) return;
     const width = container.clientWidth;
     container.scrollBy({ left: width * direction, behavior: 'smooth' });
 }
 
-/* 💡 店舗詳細パネルの展開処理 */
 function focusShopOnPanel(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
@@ -922,17 +909,13 @@ function focusShopOnPanel(shopId) {
     document.getElementById('focused-price').innerText = shop.price || '未設定';
     document.getElementById('focused-genre').innerText = shop.genre || '未設定';
 
-    // ナビ起動ボタン
     document.getElementById('focused-app-btn').onclick = () => {
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.name + " " + shop.address)}`, '_blank');
     };
 
-    // 編集ボタン
     document.getElementById('focused-edit-btn').onclick = () => openEditForm(shopId);
 
-    // マップ種別表示出し分け
     if (shop.type === '飲食店' || !shop.type) {
-        // 🍔 飲食店用表示
         document.getElementById('focused-memo-row').style.display = 'block';
         document.getElementById('focused-memo').innerText = shop.memo || 'なし';
         document.getElementById('focused-diary-section').style.display = 'none';
@@ -953,7 +936,6 @@ function focusShopOnPanel(shopId) {
             mediaGrid.style.display = 'none';
         }
     } else {
-        // ⛰️ その他マップ用の表示（日記タイムライン形式）
         document.getElementById('focused-memo-row').style.display = 'none';
         document.getElementById('focused-media-grid').style.display = 'none';
         
@@ -969,7 +951,6 @@ function focusShopOnPanel(shopId) {
                     mediaHtml += `<div class="focused-media-grid" style="display:grid; margin-bottom:10px;">`;
                     visit.files.forEach(file => {
                         const src = file.githubUrl || file.data;
-                        // 💡 その他マップでも写真動画の上に個別メモ（💬）を表示
                         mediaHtml += `
                             <div class="focused-media-card">
                                 <div class="focused-media-memo">💬 ${escapeHtml(file.memo || ' ')}</div>
@@ -995,7 +976,6 @@ function focusShopOnPanel(shopId) {
 
     document.getElementById('focused-shop-panel').style.display = 'block';
     
-    // 地図の埋め込み更新
     if (shop.address) {
         const word = shop.address + " " + shop.name;
         document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=" + encodeURIComponent(word) + "&z=14&output=embed";
@@ -1004,7 +984,6 @@ function focusShopOnPanel(shopId) {
     }
 }
 
-/* 💡 編集モード起動 */
 function openEditForm(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
@@ -1042,14 +1021,12 @@ function openEditForm(shopId) {
     toggleRegisterFormFields();
 }
 
-/* 💡 フィルタ項目ドロップダウンの構築 */
 function updateFilterDropLists(allShops) {
     const areas = new Set();
     const prices = new Set();
     const genres = new Set();
 
     allShops.forEach(shop => {
-        // 現在のタブ種別に合致するデータからのみ抽出
         const isRest = shop.type === '飲食店' || !shop.type;
         if (currentMapType === 'restaurant' && !isRest) return;
         if (currentMapType === 'other' && isRest) return;
@@ -1063,7 +1040,6 @@ function updateFilterDropLists(allShops) {
     buildTabItems('price-filter-list', 'price', Array.from(prices));
     buildTabItems('genre-filter-list', 'genre', Array.from(genres));
 
-    // ついでに登録画面のサジェストリスト(datalist)も更新
     buildDatalist('area-history', Array.from(areas));
     buildDatalist('genre-history', Array.from(genres));
 }
@@ -1102,9 +1078,8 @@ function toggleFilterTab(key) {
 
 function setFilter(key, value) {
     currentFilters[key] = value;
-    toggleFilterTab(''); // 全て閉じる
+    toggleFilterTab(''); 
     
-    // エリアが固定された場合、簡易的にメインマップをそのエリアのキーワードで再セットする
     if (key === 'area' && value) {
         document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=" + encodeURIComponent(value) + "&z=13&output=embed";
     } else if (key === 'area' && !value) {
@@ -1125,7 +1100,7 @@ function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
-    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近隣含む）":""}`);
+    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近微含む）":""}`);
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
     
@@ -1137,13 +1112,11 @@ function updateFilterBarDisplay() {
     }
 }
 
-/* 💡 ページ遷移制御 */
 function switchPage(pageName) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(`page-${pageName}`).classList.add('active');
     
     if (pageName === 'register' && !document.getElementById('edit-shop-id').value) {
-        // 新規登録なら全クリア
         document.getElementById('edit-shop-id').value = "";
         document.getElementById('shop-type').value = "飲食店";
         document.getElementById('shop-name').value = "";
@@ -1162,7 +1135,6 @@ function switchPage(pageName) {
     }
 }
 
-/* 🍔 飲食店用：メディアファイルアップロード・プレビュー周り */
 async function handleFileSelect(event) {
     const files = event.target.files;
     if (!files) return;
@@ -1200,7 +1172,6 @@ function renderPhotoPreviews() {
     });
 }
 
-/* 🔩 汎用サブユーティリティ関数群 */
 function convertFileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
