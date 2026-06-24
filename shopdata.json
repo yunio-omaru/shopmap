@@ -2,22 +2,27 @@
   "logs": {
     "shop_1782198348282": {
       "id": "shop_1782198348282",
+      "type": "飲食店",
       "name": "筑豊りぼん",
       "address": "福岡県福岡市中央区警固1-4-27",
       "building": "ＫＥＧＯエイトビル 2F",
+      "url": "",
       "area": "警固",
       "price": "4000〜5000円",
       "genre": "焼肉",
       "memo": "まじうまい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782202717000": {
       "id": "shop_1782202717000",
+      "type": "飲食店",
       "name": "基山サービスエリア下り(基山 うまかもん横丁)",
       "address": "福岡県筑紫野市原田１３１８",
       "building": "",
+      "url": "",
       "area": "筑紫野",
       "price": "〜1000",
       "genre": "うどん",
@@ -33,13 +38,16 @@
           "isGitHubUploaded": true,
           "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/refs/heads/main/shops/Restaurant/基山サービスエリア下り(基山 うまかもん横丁)/1782202709994_IMG_5336.jpeg"
         }
-      ]
+      ],
+      "visits": []
     },
     "shop_1782206737511": {
       "id": "shop_1782206737511",
+      "type": "飲食店",
       "name": "潮から豚ぼ",
       "address": "大分県宇佐市東大堀３０４−１",
       "building": "",
+      "url": "",
       "area": "宇佐",
       "price": "1000〜1500",
       "genre": "ランチ、鶏",
@@ -87,166 +95,204 @@
           "isGitHubUploaded": true,
           "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/refs/heads/main/shops/Restaurant/潮から豚ぼ/1782206731156_IMG_5426.jpeg"
         }
-      ]
+      ],
+      "visits": []
     },
     "shop_1782214673465": {
       "id": "shop_1782214673465",
+      "type": "飲食店",
       "name": "大名もつ酒場 ひろちゃん",
       "address": "福岡県福岡市中央区大名２丁目１−３０",
       "building": "2F",
+      "url": "",
       "area": "大名",
       "price": "3000〜4000",
       "genre": "居酒屋",
       "memo": "",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782214793265": {
       "id": "shop_1782214793265",
+      "type": "飲食店",
       "name": "一伍屋大名店",
       "address": "福岡県福岡市中央区大名１丁目２−２９",
       "building": "1F",
+      "url": "",
       "area": "大名",
       "price": "5000",
       "genre": "居酒屋",
       "memo": "",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782214907028": {
       "id": "shop_1782214907028",
+      "type": "飲食店",
       "name": "釜喜利うどん",
       "address": "福岡県福岡市中央区大名１丁目７−８",
       "building": "F,Corazón大名",
+      "url": "",
       "area": "大名",
       "price": "",
       "genre": "うどん、ランチ",
       "memo": "テーブルトッピングで桜エビふりかけあり",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782215182304": {
       "id": "shop_1782215182304",
+      "type": "飲食店",
       "name": "大名暖招家あんねい",
       "address": "福岡県福岡市中央区大名２丁目２−４２",
       "building": "ハビダス21大名 1F",
+      "url": "",
       "area": "大名",
       "price": "",
       "genre": "居酒屋、アジアン系",
       "memo": "穴子の白焼大きい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782215943733": {
       "id": "shop_1782215943733",
+      "type": "飲食店",
       "name": "イタリアンバール タカズキッチン",
       "address": "〒810-0041 福岡県福岡市中央区大名１丁目４−１１",
       "building": "カームプレイス大名 ２F",
+      "url": "",
       "area": "大名",
       "price": "",
       "genre": "イタリアン、ランチ、ディナー",
       "memo": "隠れ家、少人数おしゃれ\n行ってみたい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782216324049": {
       "id": "shop_1782216324049",
+      "type": "飲食店",
       "name": "BARBABA (バル・ババ)",
       "address": "〒810-0014 福岡県福岡市中央区平尾２丁目１７−２０ グランド平尾 105",
       "building": "",
+      "url": "",
       "area": "平尾",
       "price": "",
       "genre": "スペイン",
       "memo": "食べログ100名店　イカ墨パエリア\n行ってみたい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782216545905": {
       "id": "shop_1782216545905",
+      "type": "飲食店",
       "name": "ビストロブーレ",
       "address": "〒810-0014 福岡県福岡市中央区平尾４丁目５−３",
       "building": "エステートモア平尾山荘通り",
+      "url": "",
       "area": "平尾",
       "price": "",
       "genre": "フランス",
       "memo": "店主が1人で切り盛りの為、まったり過ごす時用\n行ってみたい　基本コース",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782218144443": {
       "id": "shop_1782218144443",
+      "type": "飲食店",
       "name": "ビストロミツ",
       "address": "〒810-0022 福岡県福岡市中央区薬院２丁目１６−１１",
       "building": "",
+      "url": "",
       "area": "薬院",
       "price": "",
       "genre": "ビストロ、ランチ、ディナー",
       "memo": "昼は2400(これの鴨肉変更がおすすめらしい)、3900、5500\n夜は4500、6000\n行ってみたい\n要予約",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782218577149": {
       "id": "shop_1782218577149",
+      "type": "飲食店",
       "name": "平尾 焼き鳥 肉寿司 にく串や",
       "address": "〒810-0014 福岡県福岡市中央区平尾２丁目２１−１２",
       "building": "",
+      "url": "",
       "area": "平尾",
       "price": "",
       "genre": "居酒屋、串",
       "memo": "串物も高すぎず、おしゃれでうまそう\nポテサラ\n行ってみたい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782218847201": {
       "id": "shop_1782218847201",
+      "type": "飲食店",
       "name": "今石飯店 涼華（すずか）",
       "address": "〒815-0083 福岡県福岡市南区高宮１丁目２−３３ セゾンドヴィラ平尾 103号室",
       "building": "",
+      "url": "",
       "area": "平尾",
       "price": "",
       "genre": "中華、ちゃんぽん、焼飯",
       "memo": "焼き飯　おすすめ\n行ってみたい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782269395451": {
       "id": "shop_1782269395451",
+      "type": "飲食店",
       "name": "街角バルShow-Kitchen",
       "address": "〒818-0072 福岡県筑紫野市二日市中央３丁目８−１４ 2F",
       "building": "",
+      "url": "",
       "area": "筑紫野",
       "price": "1000~2000",
       "genre": "イタリアン、ランチ、ディナー",
       "memo": "行ってみたい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782269535178": {
       "id": "shop_1782269535178",
+      "type": "飲食店",
       "name": "次郎長",
       "address": "〒818-0003 福岡県筑紫野市山家４３３５−１",
       "building": "",
+      "url": "",
       "area": "筑紫野",
       "price": "1000~2000",
       "genre": "ランチ、定食",
       "memo": "ちゃんぽん、焼き飯がおいしいらしい\n行ってみたい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782269717727": {
       "id": "shop_1782269717727",
+      "type": "飲食店",
       "name": "寿花　昼つけ麺　夜居酒屋",
       "address": "〒818-0061 福岡県筑紫野市紫１丁目１４−１２",
       "building": "",
@@ -257,10 +303,12 @@
       "memo": "営業時間はインスタから\n串もの安い\n行ってみたい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782281235907": {
       "id": "shop_1782281235907",
+      "type": "飲食店",
       "name": "ころしのカレー",
       "address": "〒818-0072 福岡県筑紫野市二日市中央４丁目１２−５",
       "building": "",
@@ -271,23 +319,28 @@
       "memo": "変わらずのおいしさ",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782280864591": {
       "id": "shop_1782280864591",
+      "type": "飲食店",
       "name": "味処 天六(天六食堂)",
       "address": "〒818-0071 福岡県筑紫野市二日市西１丁目５−８",
       "building": "",
+      "url": "",
       "area": "筑紫野",
       "price": "1000-2000",
       "genre": "ランチ、ディナー",
       "memo": "ディナーは20時まで\n昭和レトロで安価\n行ってみたい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782326774115": {
       "id": "shop_1782326774115",
+      "type": "飲食店",
       "name": "もつ料理みやもと",
       "address": "〒812-0039 福岡県福岡市博多区冷泉町８−２",
       "building": "",
@@ -298,10 +351,12 @@
       "memo": "電話予約の場合15〜17時までに\nミシュラン2019福岡掲載店\nいってみたい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     },
     "shop_1782327140383": {
       "id": "shop_1782327140383",
+      "type": "飲食店",
       "name": "博多フレンチ ビストロ サイダ",
       "address": "〒812-0036 福岡県福岡市博多区上呉服町１１−１７ １Ｆ",
       "building": "",
@@ -312,7 +367,8 @@
       "memo": "ランチは電話予約必須\nハンバーグうまい",
       "lat": null,
       "lng": null,
-      "files": []
+      "files": [],
+      "visits": []
     }
   },
   "master": {}
