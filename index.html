@@ -329,7 +329,7 @@ let currentJsonSha = "";
 let currentFilters = { area: '', price: '', genre: '' };
 let uploadedFiles = []; 
 let isDataLoaded = false; 
-let hasDeletedJsonThisSession = false; // 今回のセッションでJSONを削除したかどうかのフラグ
+let hasDeletedJsonThisSession = false; 
 
 const NEIGHBOR_AREAS = {
     "天神": ["天神", "大名", "今泉", "西中洲", "渡辺通", "舞鶴"],
@@ -531,28 +531,30 @@ async function saveRegisteredShop() {
     appData.logs[targetId] = { id: targetId, name, address, building, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
     
     try {
+        // 先に必ず現在のGitHubの最新状況（ファイル有無と最新のSHA）を同期・取得する
+        statusLabel.innerText = "🚀 GitHub上の最新状況を同期中...";
+        await syncAndFetchLatestGitHubData();
+
         // ★ 今回のセッションで初めての保存の場合は、JSONを一度削除する
         if (!hasDeletedJsonThisSession) {
-            statusLabel.innerText = "💥 初回登録時：既存データのクリーンアップ処理中...";
-            await syncAndFetchLatestGitHubData(); // 最新のSHAを取得
-            
             if (currentJsonSha && currentJsonSha.trim() !== "") {
+                statusLabel.innerText = "💥 初回登録時：既存データのクリーンアップ処理中...";
                 try {
-                    await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}`, {
+                    const delRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ message: `Reset shop_data.json for fresh session`, sha: currentJsonSha, branch: GITHUB_BRANCH })
                     });
-                    currentJsonSha = ""; // 削除成功したためSHAを空にする
+                    
+                    if (!delRes.ok) {
+                        console.warn("初回JSON削除リクエストが正常に処理されませんでした。上書き処理に移行します。");
+                    }
+                    currentJsonSha = ""; // 削除処理をした、またはファイルが消えたためSHAをリセット
                 } catch (delErr) {
-                    console.error("初回JSON削除スキップ:", delErr);
+                    console.error("初回JSON削除処理スキップ:", delErr);
                 }
             }
-            hasDeletedJsonThisSession = true; // フラグを立てて、2回目以降は実行しないようにする
-        } else {
-            // 2回目以降は最新のSHAを取得して普通に上書き
-            statusLabel.innerText = "🚀 GitHub上の既存データを確認中...";
-            await syncAndFetchLatestGitHubData();
+            hasDeletedJsonThisSession = true; 
         }
 
         const jsonString = JSON.stringify(appData, null, 2);
@@ -570,10 +572,12 @@ async function saveRegisteredShop() {
             branch: GITHUB_BRANCH
         };
         
+        // 削除直後等でSHAが無い、または新規ファイル作成の場合はsha属性を含めずに送信する（これで422を完全回避）
         if (currentJsonSha && currentJsonSha.trim() !== "") {
             putBody.sha = currentJsonSha;
         }
         
+        statusLabel.innerText = "🚀 GitHub上のJSONファイルを更新中...";
         const githubRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
