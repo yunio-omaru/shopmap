@@ -36,6 +36,13 @@ header {
     box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
     margin-bottom: 10px; 
 }
+/* ヘッダー右側のコントロール領域 */
+.header-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+}
 button { 
     cursor: pointer; 
     border: none; 
@@ -52,13 +59,16 @@ button:disabled {
 }
 .btn-sync { background-color: #27ae60; color: white; }
 .btn-sync:hover { background-color: #219653; }
+/* GitHub用ボタンのスタイル */
+.btn-github-save { background-color: #24292e; color: white; font-size: 0.8rem; padding: 6px 12px; }
+.btn-github-save:hover { background-color: #555; }
+
 .btn-primary { background-color: var(--primary-color); color: white; }
 .btn-primary:hover { background-color: #357abd; }
 .btn-secondary { background-color: #e0e0e0; color: #333; }
 .btn-secondary:hover { background-color: #d0d0d0; }
 .btn-map-app { background-color: #ff9800; color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 2px; }
 .btn-map-app:hover { background-color: #e65100; }
-/* URL用ボタンのスタイル */
 .btn-link-url { background-color: #9b59b6; color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 2px; text-decoration: none; font-weight: bold; }
 .btn-link-url:hover { background-color: #8e44ad; }
 
@@ -171,7 +181,10 @@ textarea.form-control { height: 80px; resize: vertical; }
     <div id="page-main" class="page active">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">📍 マイ飲食店マップ</h1>
-            <button id="btn-save-indicator" class="btn-sync" style="background:#2f80ed;" disabled>☁️ スプシ同期モード</button>
+            <div class="header-controls">
+                <button id="btn-save-indicator" class="btn-sync" style="background:#2f80ed;" disabled>☁️ スプシ同期モード</button>
+                <button id="btn-github-json-save" class="btn-github-save" onclick="saveJsonToGitHub()" disabled>🐙 GitHubへJSON保存</button>
+            </div>
         </header>
         
         <div class="menu-bar">
@@ -299,6 +312,7 @@ let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
 const GITHUB_OWNER = "yunio-omaru";
 const GITHUB_REPO  = "shopmap";
 const GITHUB_BRANCH = "main"; 
+const JSON_FILE_PATH = "shopdata.json"; // 💡 保存対象のJSONファイルパス
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
 
@@ -374,6 +388,82 @@ async function loadFromSpreadsheetBackup() {
 function unlockUI() {
     document.getElementById('btn-nav-register').disabled = false;
     document.getElementById('btn-submit-shop').disabled = false;
+    document.getElementById('btn-github-json-save').disabled = false; // 💡 JSONボタン有効化
+}
+
+/* 💡 追加: 現在のappDataをGitHubのshopdata.jsonへコミット保存する関数 */
+async function saveJsonToGitHub() {
+    if (!isDataLoaded) { alert("データが読み込まれていません。"); return; }
+    if (!GITHUB_TOKEN) {
+        resetGitHubToken();
+        if (!GITHUB_TOKEN) { alert("GitHubトークンがないため保存できません。"); return; }
+    }
+
+    const btn = document.getElementById('btn-github-json-save');
+    const statusLabel = document.getElementById('sync-status');
+    
+    btn.disabled = true;
+    btn.innerText = "⏳ JSON保存中...";
+    statusLabel.className = "sync-status-bar";
+    statusLabel.innerText = "🚀 GitHub上の既存shopdata.jsonの確認中...";
+
+    try {
+        // 1. 最新のファイルのSHA（バージョン識別子）を取得
+        let sha = null;
+        const getUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_FILE_PATH}?ref=${GITHUB_BRANCH}`;
+        const resGet = await fetch(getUrl, {
+            headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+        });
+        
+        if (resGet.ok) {
+            const fileData = await resGet.json();
+            sha = fileData.sha;
+        } else if (resGet.status !== 404) {
+            throw new Error(`ファイルメタデータ取得失敗 (${resGet.status})`);
+        }
+
+        // 2. JSONを整形してBase64化
+        const jsonString = JSON.stringify(appData, null, 2);
+        // 日本語（マルチバイト文字）対応のBase64エンコード
+        const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
+
+        // 3. GitHub API経由でファイルを更新（または新規作成）
+        statusLabel.innerText = "🚀 GitHubへ新JSONデータをコミット中...";
+        const putUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_FILE_PATH}`;
+        const bodyObj = {
+            message: "Update shopdata.json from Map App",
+            content: base64Content,
+            branch: GITHUB_BRANCH
+        };
+        if (sha) bodyObj.sha = sha; // 上書きのために既存のSHAを設定
+
+        const resPut = await fetch(putUrl, {
+            method: 'PUT',
+            headers: { 
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify(bodyObj)
+        });
+
+        if (!resPut.ok) {
+            const errText = await resPut.text();
+            throw new Error(`GitHubへの書き込みに失敗しました (${resPut.status}): ${errText}`);
+        }
+
+        statusLabel.className = "sync-status-bar success";
+        statusLabel.innerText = "✅ GitHubリポジトリへのJSONファイル保存が成功しました！";
+        alert("GitHubの shopdata.json への書き込みが完了しました！");
+
+    } catch (e) {
+        statusLabel.className = "sync-status-bar error";
+        statusLabel.innerText = `❌ GitHub JSON保存エラー: ${e.message}`;
+        alert(`【GitHub保存失敗】\n原因: ${e.message}`);
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "🐙 GitHubへJSON保存";
+    }
 }
 
 async function saveRegisteredShop() {
@@ -382,7 +472,7 @@ async function saveRegisteredShop() {
     const name = document.getElementById('shop-name').value.trim();
     const address = document.getElementById('shop-address').value.trim();
     const building = document.getElementById('shop-building').value.trim(); 
-    const url = document.getElementById('shop-url').value.trim(); // 💡 URL取得
+    const url = document.getElementById('shop-url').value.trim(); 
     let area = document.getElementById('shop-area').value.trim(); 
     const price = document.getElementById('shop-price').value.trim();
     const genre = document.getElementById('shop-genre').value.trim();
@@ -492,7 +582,6 @@ async function saveRegisteredShop() {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
-    // 💡 保存オブジェクトに url を追加
     appData.logs[targetId] = { id: targetId, name, address, building, url, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
     
     try {
@@ -566,7 +655,6 @@ function focusShop(shopId) {
         document.getElementById('focused-building-row').style.display = 'none';
     }
     
-    // 💡 修正箇所: メインメニューパネルでのURL表示制御
     if (shop.url) {
         document.getElementById('focused-url-row').style.display = 'block';
         document.getElementById('focused-url').href = shop.url;
@@ -787,7 +875,7 @@ function editShop(id) {
     document.getElementById('shop-name').value = shop.name || '';
     document.getElementById('shop-address').value = shop.address || '';
     document.getElementById('shop-building').value = shop.building || ''; 
-    document.getElementById('shop-url').value = shop.url || ''; // 💡 編集時のURL復元
+    document.getElementById('shop-url').value = shop.url || ''; 
     document.getElementById('shop-area').value = shop.area || ''; 
     document.getElementById('shop-price').value = shop.price || '';
     document.getElementById('shop-genre').value = shop.genre || '';
@@ -801,7 +889,7 @@ function clearForm() {
     document.getElementById('shop-name').value = '';
     document.getElementById('shop-address').value = '';
     document.getElementById('shop-building').value = ''; 
-    document.getElementById('shop-url').value = ''; // 💡 フォームリセット
+    document.getElementById('shop-url').value = ''; 
     document.getElementById('shop-area').value = ''; 
     document.getElementById('shop-price').value = '';
     document.getElementById('shop-genre').value = '';
