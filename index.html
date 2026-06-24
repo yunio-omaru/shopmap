@@ -358,12 +358,11 @@ async function loadFromGitHub() {
     
     const cacheBuster = Date.now();
     
-    // 💡 Failed to fetchを回避するため、読み込み(GET)専用のraw URLを使用します
-    const rawJsonUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}/${JSON_PATH}?t=${cacheBuster}`;
+    // 💡 外部URLを使わず、自分と同じ場所にあるファイルを相対パスで読み込むことでブロックを完全に回避！
+    const localJsonPath = `./${JSON_PATH}?t=${cacheBuster}`;
     
     try {
-        // 💡 raw URLからはトークン（Authorizationヘッダー）を外して送ることで、ブラウザのブロック(CORS)を100%回避します
-        const res = await fetch(rawJsonUrl, {
+        const res = await fetch(localJsonPath, {
             headers: { 
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
                 'Pragma': 'no-cache'
@@ -375,7 +374,7 @@ async function loadFromGitHub() {
             
             if (!appData.logs) appData.logs = {};
             
-            // 💡 上書き保存(PUT)の時に必要となる最新の「sha」だけは、裏で別途取得を試みます
+            // 💡 上書き保存(PUT)の時に必要となる最新の「sha」だけは、裏でAPIを叩いて取得
             currentJsonSha = await fetchLatestSha();
             
             statusLabel.className = "sync-status-bar success";
@@ -387,10 +386,10 @@ async function loadFromGitHub() {
             statusLabel.innerText = "📂 GitHubにファイルがまだ無いため、スプシから引き継ぎます...";
             await loadFromSpreadsheetBackup(true); 
         } else {
-            throw new Error(`GitHub通信エラー (Status: ${res.status})`);
+            throw new Error(`ファイル読み込みエラー (Status: ${res.status})`);
         }
     } catch (e) {
-        console.error("GitHub読み込み失敗:", e);
+        console.error("相対パス読み込み失敗:", e);
         // 万が一、上記でも弾かれた場合はスプシから安全に救出
         statusLabel.innerText = "⚠️ GitHub接続エラー。スプシから代替読込を試みます...";
         await loadFromSpreadsheetBackup(false);
