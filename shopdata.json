@@ -434,6 +434,15 @@
               "memo": "景色",
               "isGitHubUploaded": true,
               "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/甲尾山公園の風車/1782335598214_IMG_5346.jpeg"
+            },
+            {
+              "name": "IMG_5348.mov",
+              "type": "video/quicktime",
+              "memo": "",
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/甲尾山公園の風車/1782340871484_IMG_5348.mov",
+              "data": "",
+              "originalData": "",
+              "isGitHubUploaded": true
             }
           ]
         }
