@@ -58,6 +58,9 @@ button:disabled {
 .btn-secondary:hover { background-color: #d0d0d0; }
 .btn-map-app { background-color: #ff9800; color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 2px; }
 .btn-map-app:hover { background-color: #e65100; }
+/* URL用ボタンのスタイル */
+.btn-link-url { background-color: #9b59b6; color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 2px; text-decoration: none; font-weight: bold; }
+.btn-link-url:hover { background-color: #8e44ad; }
 
 .sync-status-bar { 
     font-size: 0.8rem; 
@@ -207,6 +210,7 @@ textarea.form-control { height: 80px; resize: vertical; }
             </h2>
             <p><strong>📍 住所:</strong> <span id="focused-address"></span> <button id="focused-app-btn" class="btn-map-app">🗺️ ナビ起動</button></p>
             <p id="focused-building-row"><strong>🏢 建物名:</strong> <span id="focused-building"></span></p>
+            <p id="focused-url-row" style="display:none;"><strong>🔗 リンク:</strong> <a id="focused-url" href="#" target="_blank" class="btn-link-url">🔗 リンクを開く</a></p>
             <p><strong>🗺️ エリア:</strong> <span id="focused-area"></span> | <strong>💰 価格帯:</strong> <span id="focused-price"></span> | <strong>🏷️ ジャンル:</strong> <span id="focused-genre"></span></p>
             <p><strong>📝 備考:</strong> <span id="focused-memo"></span></p>
             
@@ -244,6 +248,11 @@ textarea.form-control { height: 80px; resize: vertical; }
             <div class="form-group">
                 <label for="shop-building">ビル名・階数</label>
                 <input type="text" id="shop-building" class="form-control" placeholder="例) 〇〇ビル 1F">
+            </div>
+
+            <div class="form-group">
+                <label for="shop-url">ウェブサイト / SNS / 食べログのURL</label>
+                <input type="url" id="shop-url" class="form-control" placeholder="例) https://tabelog.com/...">
             </div>
 
             <div class="form-group">
@@ -373,6 +382,7 @@ async function saveRegisteredShop() {
     const name = document.getElementById('shop-name').value.trim();
     const address = document.getElementById('shop-address').value.trim();
     const building = document.getElementById('shop-building').value.trim(); 
+    const url = document.getElementById('shop-url').value.trim(); // 💡 URL取得
     let area = document.getElementById('shop-area').value.trim(); 
     const price = document.getElementById('shop-price').value.trim();
     const genre = document.getElementById('shop-genre').value.trim();
@@ -482,7 +492,8 @@ async function saveRegisteredShop() {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
-    appData.logs[targetId] = { id: targetId, name, address, building, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
+    // 💡 保存オブジェクトに url を追加
+    appData.logs[targetId] = { id: targetId, name, address, building, url, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
     
     try {
         statusLabel.innerText = "🚀 スプレッドシートへデータを保存中...";
@@ -542,7 +553,6 @@ function focusShop(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
     
-    // 💡 修正箇所1: ビル名を除去し「住所のみ」でクエリ生成。さらに文字化け対策で文字列を完全固定
     const mapQuery = shop.address;
     document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=" + encodeURIComponent(mapQuery) + "&z=16&output=embed";
     
@@ -554,6 +564,14 @@ function focusShop(shopId) {
         document.getElementById('focused-building').innerText = shop.building;
     } else {
         document.getElementById('focused-building-row').style.display = 'none';
+    }
+    
+    // 💡 修正箇所: メインメニューパネルでのURL表示制御
+    if (shop.url) {
+        document.getElementById('focused-url-row').style.display = 'block';
+        document.getElementById('focused-url').href = shop.url;
+    } else {
+        document.getElementById('focused-url-row').style.display = 'none';
     }
     
     document.getElementById('focused-area').innerText = shop.area || '未設定';
@@ -587,7 +605,6 @@ function focusShop(shopId) {
 }
 
 function openNativeMapApp(address, building) {
-    // ネイティブアプリ側も住所単体の方が確実
     const query = encodeURIComponent(address);
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     window.open(isIOS ? "maps://?q=" + query : "https://maps.google.com/maps?q=" + query, '_blank');
@@ -770,6 +787,7 @@ function editShop(id) {
     document.getElementById('shop-name').value = shop.name || '';
     document.getElementById('shop-address').value = shop.address || '';
     document.getElementById('shop-building').value = shop.building || ''; 
+    document.getElementById('shop-url').value = shop.url || ''; // 💡 編集時のURL復元
     document.getElementById('shop-area').value = shop.area || ''; 
     document.getElementById('shop-price').value = shop.price || '';
     document.getElementById('shop-genre').value = shop.genre || '';
@@ -783,6 +801,7 @@ function clearForm() {
     document.getElementById('shop-name').value = '';
     document.getElementById('shop-address').value = '';
     document.getElementById('shop-building').value = ''; 
+    document.getElementById('shop-url').value = ''; // 💡 フォームリセット
     document.getElementById('shop-area').value = ''; 
     document.getElementById('shop-price').value = '';
     document.getElementById('shop-genre').value = '';
@@ -797,8 +816,6 @@ function setFilter(type, value) {
         let word = "";
         const target = Object.values(appData.logs).find(s => s && s.address && (s.area === value || isAreaMatch(s.area, value)));
         word = target ? target.address : (value.includes("福岡") ? value : "福岡県 " + value);
-        
-        // 💡 修正箇所2: 文字化けを完全に排除したURL組み立て
         document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=" + encodeURIComponent(word) + "&z=14&output=embed";
     } else if (!currentFilters.area) {
         document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
