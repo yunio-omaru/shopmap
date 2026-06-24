@@ -1270,7 +1270,7 @@ async function focusShopOnPanel(shopId) {
     
     if (shop.address) {
         const word = shop.address + " " + shop.name;
-        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=" + encodeURIComponent(word) + "&z=14&output=embed";
+        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
     }
 }
 
@@ -1359,9 +1359,9 @@ function setFilter(key, value) {
     toggleFilterTab(''); 
     
     if (key === 'area' && value) {
-        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=" + encodeURIComponent(value) + "&z=13&output=embed";
+        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
     } else if (key === 'area' && !value) {
-        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡市&z=11&output=embed";
+        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
     }
     document.getElementById('focused-shop-panel').style.display = 'none';
     renderApp(); 
@@ -1370,7 +1370,7 @@ function setFilter(key, value) {
 function clearFilter() { 
     currentFilters.area = ''; currentFilters.price = ''; currentFilters.genre = ''; 
     document.getElementById('focused-shop-panel').style.display = 'none';
-    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡市&z=11&output=embed";
+    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
     renderApp(); 
 }
 
@@ -1420,7 +1420,7 @@ function switchPage(pageName) {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, ''');
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 </script>
 </body>
