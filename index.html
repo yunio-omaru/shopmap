@@ -530,7 +530,7 @@ async function saveRegisteredShop() {
         statusLabel.innerText = "🚀 GitHubへ写真・動画をアップロード中...";
     }
     
-    // 種別が Restaurant でない（Other）の場合はフォルダ名を etc に設定
+    // 【修正】種別が飲食店（Restaurant）以外の場合は folderName を etc に設定
     const folderName = (shopType === "Restaurant") ? "Restaurant" : "etc";
     
     for (const file of uploadedFiles) {
@@ -586,6 +586,7 @@ async function saveRegisteredShop() {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
+    // 【修正】shopType（種別プルダウンの値）を確実にオブジェクト内に含めて保存
     appData.logs[targetId] = { 
         id: targetId, 
         name, 
@@ -594,7 +595,7 @@ async function saveRegisteredShop() {
         url, 
         area, 
         price, 
-        shopType, // 種別データを確実に保持
+        shopType, 
         genre, 
         memo, 
         lat: null, 
@@ -891,7 +892,12 @@ function editShop(id) {
     document.getElementById('shop-url').value = shop.url || '';
     document.getElementById('shop-area').value = shop.area || ''; 
     document.getElementById('shop-price').value = shop.price || '';
-    document.getElementById('shop-type').value = shop.shopType || 'Restaurant'; 
+    
+    // 【修正】編集時に種別の選択状態を正しく復元
+    if (document.getElementById('shop-type')) {
+        document.getElementById('shop-type').value = shop.shopType || 'Restaurant';
+    }
+    
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-date').value = shop.visitDate || ''; 
     document.getElementById('shop-memo').value = shop.memo || '';
@@ -907,7 +913,12 @@ function clearForm() {
     document.getElementById('shop-url').value = ''; 
     document.getElementById('shop-area').value = ''; 
     document.getElementById('shop-price').value = '';
-    document.getElementById('shop-type').value = 'Restaurant'; 
+    
+    // 【修正】クリア時に初期値に戻す
+    if (document.getElementById('shop-type')) {
+        document.getElementById('shop-type').value = 'Restaurant';
+    }
+    
     document.getElementById('shop-genre').value = '';
     document.getElementById('shop-date').value = ''; 
     document.getElementById('shop-memo').value = '';
