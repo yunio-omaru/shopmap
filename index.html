@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用店舗マップ (スプシ保存・画像GitHub版)</title>
+<title>自分専用飲食店・観光マップ (スプシ保存・画像GitHub版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -15,7 +15,7 @@
 }
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-color);
+    background-color: var(--bg-color); 
     color: var(--text-color); 
     margin: 0; 
     padding: 0;
@@ -23,7 +23,7 @@ body {
 .container { 
     max-width: 800px; 
     margin: 0 auto; 
-    padding: 15px;
+    padding: 15px; 
     box-sizing: border-box; 
 }
 header { 
@@ -31,7 +31,7 @@ header {
     justify-content: space-between; 
     align-items: center; 
     background: var(--card-bg); 
-    padding: 12px 15px;
+    padding: 12px 15px; 
     border-radius: 12px; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
     margin-bottom: 10px; 
@@ -42,14 +42,12 @@ header {
     gap: 4px;
     align-items: flex-end;
 }
-button, select { 
-    border-radius: 8px; 
-    font-weight: bold; 
-}
 button { 
     cursor: pointer; 
     border: none; 
-    padding: 8px 14px;
+    border-radius: 8px; 
+    padding: 8px 14px; 
+    font-weight: bold; 
     transition: background-color 0.2s;
 }
 button:disabled {
@@ -76,7 +74,7 @@ button:disabled {
     font-size: 0.8rem; 
     font-weight: bold; 
     color: #2f80ed; 
-    background: #e3f2fd;
+    background: #e3f2fd; 
     padding: 6px 12px; 
     border-radius: 8px; 
     margin-bottom: 15px; 
@@ -118,6 +116,13 @@ button:disabled {
 .focused-media-memo { font-size: 0.8rem; font-weight: bold; color: #555; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.2rem; }
 .focused-media-card img, .focused-media-card video { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; cursor: pointer; }
 
+/* 日記・タイムライン用のスタイル */
+.diary-timeline { margin-top: 15px; border-left: 3px solid #ddd; padding-left: 15px; }
+.diary-item { position: relative; margin-bottom: 20px; }
+.diary-item::before { content: ''; position: absolute; left: -22px; top: 3px; width: 10px; height: 10px; background: var(--primary-color); border-radius: 50%; }
+.diary-date { font-weight: bold; color: var(--primary-color); font-size: 0.95rem; margin-bottom: 4px; }
+.diary-memo { font-size: 0.9rem; color: #333; background: #f9f9f9; padding: 8px; border-radius: 6px; white-space: pre-wrap; }
+
 .list-section-title { font-size: 1.1rem; font-weight: bold; margin: 20px 0 10px 0; color: #555; }
 .shop-list-container { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 
@@ -158,6 +163,10 @@ button:disabled {
 .preview-card .memo-input { width: 100%; font-size: 0.75rem; padding: 4px; margin-top: 5px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 4px; }
 .preview-card .btn-del-photo { position: absolute; top: 2px; right: 2px; background: rgba(255,107,107,0.9); color: white; border-radius: 50%; width: 20px; height: 20px; padding: 0; font-size: 11px; line-height: 20px; text-align: center; }
 
+/* 日記入力フォーム用スタイル */
+.visit-record-box { border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fdfdfd; position: relative;}
+.btn-del-visit { position: absolute; top: 10px; right: 10px; background: #ff6b6b; color: white; font-size: 0.75rem; padding: 4px 8px; }
+
 .filter-tab { display: none; position: absolute; top: 40px; right: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 10px; max-height: 200px; overflow-y: auto; z-index: 1000; min-width: 150px; }
 .filter-tab.active { display: block; }
 .filter-item { padding: 8px 12px; cursor: pointer; border-radius: 4px; }
@@ -171,6 +180,17 @@ button:disabled {
 textarea.form-control { height: 80px; resize: vertical; }
 
 .active-filter-indicator { background: #e3f2fd; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; display: none; justify-content: space-between; align-items: center; }
+
+.map-type-select {
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px 10px;
+    background: white;
+    cursor: pointer;
+    color: var(--text-color);
+}
 </style>
 </head>
 <body>
@@ -180,7 +200,10 @@ textarea.form-control { height: 80px; resize: vertical; }
 
     <div id="page-main" class="page active">
         <header>
-            <h1 style="font-size: 1.2rem; margin:0;">📍 マイ店舗マップ</h1>
+            <select id="map-type-selector" class="map-type-select" onchange="switchMapType()">
+                <option value="restaurant">🍔 飲食店マップ</option>
+                <option value="other">⛰️ その他マップ</option>
+            </select>
             <div class="header-controls">
                 <button id="btn-save-indicator" class="btn-sync" style="background:#2f80ed;" disabled>☁️ スプシ同期モード</button>
                 <button id="btn-github-json-save" class="btn-github-save" onclick="saveJsonToGitHub()" disabled>🐙 GitHubへJSON保存</button>
@@ -225,10 +248,14 @@ textarea.form-control { height: 80px; resize: vertical; }
             <p id="focused-building-row"><strong>🏢 建物名:</strong> <span id="focused-building"></span></p>
             <p id="focused-url-row" style="display:none;"><strong>🔗 リンク:</strong> <a id="focused-url" href="#" target="_blank" class="btn-link-url">🔗 リンクを開く</a></p>
             <p><strong>🗺️ エリア:</strong> <span id="focused-area"></span> | <strong>💰 価格帯:</strong> <span id="focused-price"></span> | <strong>🏷️ ジャンル:</strong> <span id="focused-genre"></span></p>
-            <p><strong>📅 訪問日:</strong> <span id="focused-date"></span></p>
-            <p><strong>📝 備考:</strong> <span id="focused-memo"></span></p>
             
+            <p id="focused-memo-row"><strong>📝 備考:</strong> <span id="focused-memo"></span></p>
             <div id="focused-media-grid" class="focused-media-grid"></div>
+
+            <div id="focused-diary-section" style="display:none; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                <strong>📅 訪問履歴（日記）:</strong>
+                <div id="focused-diary-timeline" class="diary-timeline"></div>
+            </div>
         </div>
 
         <div class="list-section-title">📋 登録店舗一覧 (<span id="shop-count">0</span>件)</div>
@@ -250,10 +277,20 @@ textarea.form-control { height: 80px; resize: vertical; }
             <input type="hidden" id="edit-shop-id">
             
             <div class="form-group">
+                <label for="shop-type">種別<span>※必須</span></label>
+                <input type="text" id="shop-type" class="form-control" list="type-history" placeholder="例) 飲食店、お土産屋、観光地" value="飲食店" oninput="toggleRegisterFormFields()">
+                <datalist id="type-history">
+                    <option value="飲食店"></option>
+                    <option value="お土産屋"></option>
+                    <option value="観光地"></option>
+                </datalist>
+            </div>
+
+            <div class="form-group">
                 <label for="shop-name">店名<span>※必須</span></label>
                 <input type="text" id="shop-name" class="form-control" placeholder="例) 寿花">
             </div>
-             
+            
             <div class="form-group">
                 <label for="shop-address">住所<span>※必須</span></label>
                 <input type="text" id="shop-address" class="form-control" placeholder="例) 福岡市中央区大名1丁目...">
@@ -266,7 +303,7 @@ textarea.form-control { height: 80px; resize: vertical; }
 
             <div class="form-group">
                 <label for="shop-url">ウェブサイト / SNS / 食べログのURL</label>
-                <input type="url" id="shop-url" class="form-control" placeholder="例) https://...">
+                <input type="url" id="shop-url" class="form-control" placeholder="例) https://tabelog.com/...">
             </div>
 
             <div class="form-group">
@@ -279,38 +316,35 @@ textarea.form-control { height: 80px; resize: vertical; }
                 <label for="shop-price">価格帯</label>
                 <input type="text" id="shop-price" class="form-control" placeholder="例) 5000円〜6000円">
             </div>
-
-            <div class="form-group">
-                <label for="shop-type">種別</label>
-                <select id="shop-type" class="form-control">
-                    <option value="Restaurant">飲食店</option>
-                    <option value="Other">それ以外</option>
-                </select>
-            </div>
             
             <div class="form-group">
-                <label for="shop-genre">ジャンル（詳細）</label>
-                <input type="text" id="shop-genre" class="form-control" list="genre-history" placeholder="例) 居酒屋、和食、カフェ、ホテル、美容室など">
+                <label for="shop-genre">ジャンル</label>
+                <input type="text" id="shop-genre" class="form-control" list="genre-history" placeholder="例) 居酒屋、和食">
                 <datalist id="genre-history"></datalist>
             </div>
-
-            <div class="form-group">
-                <label for="shop-date">訪問日</label>
-                <input type="date" id="shop-date" class="form-control">
-            </div>
             
-            <div class="form-group">
-                <label>写真・動画</label>
-                 <div class="photo-upload-area" onclick="document.getElementById('file-input').click()">
-                    📷 タップしてファイルを選択、またはドロップ
-                    <input type="file" id="file-input" multiple accept="image/*,video/*" style="display:none;" onchange="handleFileSelect(event)">
+            <div id="fields-for-restaurant">
+                <div class="form-group">
+                    <label>写真・動画</label>
+                    <div class="photo-upload-area" onclick="document.getElementById('file-input').click()">
+                        📷 タップしてファイルを選択、またはドロップ
+                        <input type="file" id="file-input" multiple accept="image/*,video/*" style="display:none;" onchange="handleFileSelect(event)">
+                    </div>
+                    <div id="preview-zone" class="preview-container"></div>
                 </div>
-                <div id="preview-zone" class="preview-container"></div>
+                
+                <div class="form-group">
+                    <label for="shop-memo">備考</label>
+                    <textarea id="shop-memo" class="form-control" placeholder="おすすめメニューや営業時間など"></textarea>
+                </div>
             </div>
-            
-            <div class="form-group">
-                <label for="shop-memo">備考</label>
-                <textarea id="shop-memo" class="form-control" placeholder="おすすめメニューや営業時間など"></textarea>
+
+            <div id="fields-for-other-diary" style="display:none;">
+                <div class="form-group">
+                    <label>📅 訪問記録（簡易日記）</label>
+                    <div id="visit-records-container"></div>
+                    <button type="button" class="btn-primary" style="background-color:#9b59b6; width:100%; margin-top:10px;" onclick="addVisitRecordRow()">＋ 新しい訪問記録（日記）を追加</button>
+                </div>
             </div>
             
             <div style="text-align: right; margin-top: 20px;">
@@ -332,7 +366,9 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnR
 
 let appData = { logs: {}, master: {} };
 let currentFilters = { area: '', price: '', genre: '' };
+let currentMapType = 'restaurant'; // 💡 現在表示しているマップ種別 ('restaurant' or 'other')
 let uploadedFiles = []; 
+let otherVisitsData = []; // 💡 飲食店以外の訪問履歴（日記データ）を一時保持する配列
 let isDataLoaded = false; 
 
 const NEIGHBOR_AREAS = {
@@ -345,6 +381,7 @@ const NEIGHBOR_AREAS = {
     "西中洲": ["西中洲", "天神", "中洲", "春吉"],
     "春吉": ["春吉", "中洲", "西中洲", "渡辺通", "高砂"]
 };
+
 const AUTO_AREA_KEYWORDS = [
     { key: "天神", match: ["天神"] }, { key: "大名", match: ["大名"] }, { key: "今泉", match: ["今泉"] },
     { key: "西中洲", match: ["西中洲"] }, { key: "春吉", match: ["春吉"] }, { key: "中洲", match: ["中洲"] },
@@ -386,6 +423,7 @@ async function loadFromSpreadsheetBackup() {
             isDataLoaded = true;
             unlockUI();
             renderApp();
+
             statusLabel.className = "sync-status-bar success";
             statusLabel.innerText = "✅ スプレッドシートから最新データ読込完了！";
         } else {
@@ -400,7 +438,100 @@ async function loadFromSpreadsheetBackup() {
 function unlockUI() {
     document.getElementById('btn-nav-register').disabled = false;
     document.getElementById('btn-submit-shop').disabled = false;
-    document.getElementById('btn-github-json-save').disabled = false;
+    document.getElementById('btn-github-json-save').disabled = false; 
+}
+
+/* 💡 マップ種別の切り替え処理 */
+function switchMapType() {
+    currentMapType = document.getElementById('map-type-selector').value;
+    document.getElementById('focused-shop-panel').style.display = 'none';
+    renderApp();
+}
+
+/* 💡 種別入力欄に応じたフォームの切り替え */
+function toggleRegisterFormFields() {
+    const typeValue = document.getElementById('shop-type').value.trim();
+    if (typeValue === '飲食店' || !typeValue) {
+        document.getElementById('fields-for-restaurant').style.display = 'block';
+        document.getElementById('fields-for-other-diary').style.display = 'none';
+    } else {
+        document.getElementById('fields-for-restaurant').style.display = 'none';
+        document.getElementById('fields-for-other-diary').style.display = 'block';
+        if (otherVisitsData.length === 0) {
+            addVisitRecordRow(); // 💡 初期行を1つ追加
+        }
+    }
+}
+
+/* 💡 その他マップ用：日記レコード行の動的追加 */
+function addVisitRecordRow(existingData = null) {
+    const container = document.getElementById('visit-records-container');
+    const index = otherVisitsData.length;
+    
+    const record = existingData ? { ...existingData } : { date: '', memo: '', files: [] };
+    otherVisitsData.push(record);
+
+    const row = document.createElement('div');
+    row.className = 'visit-record-box';
+    row.id = `visit-row-${index}`;
+    row.innerHTML = `
+        <button type="button" class="btn-del-visit" onclick="removeVisitRecordRow(${index})">削除</button>
+        <div class="form-group">
+            <label>訪問日</label>
+            <input type="date" class="form-control visit-date" value="${record.date}" onchange="otherVisitsData(${index}).date = this.value">
+        </div>
+        <div class="form-group">
+            <label>訪問メモ</label>
+            <textarea class="form-control visit-memo" placeholder="思い出や日記を記載" onchange="otherVisitsData[${index}].memo = this.value">${escapeHtml(record.memo)}</textarea>
+        </div>
+        <div class="form-group">
+            <label>この日の写真・動画</label>
+            <div class="photo-upload-area" onclick="document.getElementById('visit-file-${index}').click()">
+                📷 タップしてファイルを追加
+                <input type="file" id="visit-file-${index}" multiple accept="image/*,video/*" style="display:none;" onchange="handleVisitFileSelect(event, ${index})">
+            </div>
+            <div id="visit-preview-${index}" class="preview-container"></div>
+        </div>
+    `;
+    container.appendChild(row);
+    renderVisitPhotoPreviews(index);
+}
+
+function removeVisitRecordRow(index) {
+    otherVisitsData[index] = null; // 論理削除
+    document.getElementById(`visit-row-${index}`).remove();
+}
+
+async function handleVisitFileSelect(event, index) {
+    const files = event.target.files;
+    if(!files) return;
+    for (const file of files) {
+        const base64Original = await convertFileToBase64(file);
+        let base64Display = base64Original;
+        if (file.type && file.type.startsWith('image/')) {
+            try { base64Display = await compressImage(base64Original, 800, 0.75); } catch (e) {}
+        }
+        otherVisitsData[index].files.push({ name: file.name, type: file.type, data: base64Display, originalData: base64Original, isGitHubUploaded: false, githubUrl: '' });
+    }
+    renderVisitPhotoPreviews(index);
+    event.target.value = '';
+}
+
+function renderVisitPhotoPreviews(index) {
+    const container = document.getElementById(`visit-preview-${index}`);
+    if (!container || !otherVisitsData[index]) return;
+    container.innerHTML = '';
+    otherVisitsData[index].files.forEach((file, fIdx) => {
+        const card = document.createElement('div');
+        card.className = 'preview-card';
+        card.innerHTML = file.type && file.type.startsWith('video/') ? `<video src="${file.githubUrl || file.data}" controls></video>` : `<img src="${file.githubUrl || file.data}">`;
+        
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-del-photo'; delBtn.innerHTML = '×';
+        delBtn.onclick = () => { otherVisitsData[index].files.splice(fIdx, 1); renderVisitPhotoPreviews(index); };
+        card.appendChild(delBtn);
+        container.appendChild(card);
+    });
 }
 
 async function saveJsonToGitHub() {
@@ -417,12 +548,14 @@ async function saveJsonToGitHub() {
     btn.innerText = "⏳ JSON保存中...";
     statusLabel.className = "sync-status-bar";
     statusLabel.innerText = "🚀 GitHub上の既存shopdata.jsonの確認中...";
+
     try {
         let sha = null;
         const getUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_FILE_PATH}?ref=${GITHUB_BRANCH}`;
         const resGet = await fetch(getUrl, {
             headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
         });
+        
         if (resGet.ok) {
             const fileData = await resGet.json();
             sha = fileData.sha;
@@ -432,7 +565,7 @@ async function saveJsonToGitHub() {
 
         const jsonString = JSON.stringify(appData, null, 2);
         const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
-        
+
         statusLabel.innerText = "🚀 GitHubへ新JSONデータをコミット中...";
         const putUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_FILE_PATH}`;
         const bodyObj = {
@@ -450,6 +583,7 @@ async function saveJsonToGitHub() {
             },
             body: JSON.stringify(bodyObj)
         });
+
         if (!resPut.ok) {
             const errText = await resPut.text();
             throw new Error(`GitHubへの書き込みに失敗しました (${resPut.status}): ${errText}`);
@@ -463,6 +597,7 @@ async function saveJsonToGitHub() {
         statusLabel.className = "sync-status-bar error";
         statusLabel.innerText = `❌ GitHub JSON保存エラー: ${e.message}`;
         alert(`【GitHub保存失敗】\n原因: ${e.message}`);
+        console.error(e);
     } finally {
         btn.disabled = false;
         btn.innerText = "🐙 GitHubへJSON保存";
@@ -472,17 +607,14 @@ async function saveJsonToGitHub() {
 async function saveRegisteredShop() {
     if (!isDataLoaded) { alert("データのロードが完了していないため、登録できません。"); return; }
     
+    const type = document.getElementById('shop-type').value.trim() || "飲食店";
     const name = document.getElementById('shop-name').value.trim();
     const address = document.getElementById('shop-address').value.trim();
-    const building = document.getElementById('shop-building').value.trim();
+    const building = document.getElementById('shop-building').value.trim(); 
     const url = document.getElementById('shop-url').value.trim(); 
     let area = document.getElementById('shop-area').value.trim(); 
     const price = document.getElementById('shop-price').value.trim();
-    const shopType = document.getElementById('shop-type').value; // 💡 プルダウンの値を取得（Restaurant または Other）
     const genre = document.getElementById('shop-genre').value.trim();
-    const visitDate = document.getElementById('shop-date').value;
-    const memo = document.getElementById('shop-memo').value.trim();
-    let id = document.getElementById('edit-shop-id').value;
     
     if (!name) { alert("店名は必須入力です。"); return; }
     if (!address) { alert("住所は必須入力です。"); return; }
@@ -495,14 +627,15 @@ async function saveRegisteredShop() {
     statusLabel.innerText = "🚀 スプレッドシートの重複を確認中...";
     
     const timestamp = Date.now();
+    let id = document.getElementById('edit-shop-id').value;
     let targetId = id;
+
     if (!targetId) {
         const existingShop = Object.values(appData.logs).find(shop => shop && shop.name === name);
         if (existingShop) {
             const proceed = confirm("同一店舗名があります。上書きしてもよろしいでしょうか。");
             if (!proceed) {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "登録";
+                submitBtn.disabled = false; submitBtn.innerText = "登録";
                 statusLabel.className = "sync-status-bar success";
                 statusLabel.innerText = "✅ 保存をキャンセルしました。";
                 return;
@@ -513,7 +646,14 @@ async function saveRegisteredShop() {
         }
     }
     
-    const hasNewMedia = uploadedFiles.some(file => !file.isGitHubUploaded && (file.data && file.data.includes(',')));
+    // 💡 トークンチェック判定（飲食店とその他で分ける）
+    let hasNewMedia = false;
+    if (type === '飲食店') {
+        hasNewMedia = uploadedFiles.some(file => !file.isGitHubUploaded && (file.data && file.data.includes(',')));
+    } else {
+        hasNewMedia = otherVisitsData.some(v => v && v.files && v.files.some(file => !file.isGitHubUploaded && (file.data && file.data.includes(','))));
+    }
+    
     if (hasNewMedia && !GITHUB_TOKEN) {
         const token = prompt("画像・動画が添付されています。保存先のGitHubアクセストークンを入力してください:");
         if (token && token.trim() !== "") {
@@ -532,62 +672,93 @@ async function saveRegisteredShop() {
         statusLabel.innerText = "🚀 GitHubへ写真・動画をアップロード中...";
     }
     
-    for (const file of uploadedFiles) {
-        if (file.isGitHubUploaded || (file.data && file.data.startsWith('http'))) {
-            file.isGitHubUploaded = true;
-            continue;
-        }
-        
-        if (file.data && file.data.includes(',')) {
-            let uploadSuccess = false;
-            let retryCount = 0;
-            
-            while (!uploadSuccess && retryCount < 2) {
+    // 💡 データの保存処理を分岐
+    let finalFiles = [];
+    let finalVisits = [];
+    let memo = "";
+
+    if (type === '飲食店') {
+        // 🍔 既存の飲食店アップロードフロー（完全維持）
+        for (const file of uploadedFiles) {
+            if (file.isGitHubUploaded || (file.data && file.data.startsWith('http'))) {
+                file.isGitHubUploaded = true;
+                continue;
+            }
+            if (file.data && file.data.includes(',')) {
                 try {
                     const targetOrigData = file.originalData || file.data;
-                    // 💡 動的に取得した shopType（Restaurant / Other）を使ってパスを生成
-                    const origPath = `shops/${shopType}/${name}/${timestamp}_${file.name}`;
+                    const origPath = `shops/Restaurant/${name}/${timestamp}_${file.name}`;
                     const origUrl = await uploadToGitHubFile(origPath, targetOrigData);
-                    file.githubUrl = origUrl;
+                    file.githubUrl = origUrl; 
                     if (file.type && file.type.startsWith('image/')) {
                         const ext = file.data.startsWith('data:image/webp') ? 'webp' : 'jpg';
-                        const thumbPath = `shops/${shopType}/${name}/thumb_${timestamp}_${file.name}.${ext}`;
+                        const thumbPath = `shops/Restaurant/${name}/thumb_${timestamp}_${file.name}.${ext}`;
                         const thumbUrl = await uploadToGitHubFile(thumbPath, file.data);
-                        file.data = thumbUrl;
+                        file.data = thumbUrl; 
                     } else {
                         file.data = origUrl;
                     }
                     file.isGitHubUploaded = true;
-                    uploadSuccess = true;
                 } catch (err) { 
-                    console.error("写真保存エラー:", err);
-                    retryCount++;
-                    
-                    if (err.message.includes("401") || err.message.includes("403") || err.message.includes("Failed")) {
-                        const newToken = prompt("GitHubトークンが無効または期限切れの可能性があります。\n正しいアクセストークンを再度入力してください:");
-                        if (newToken && newToken.trim() !== "") {
-                            localStorage.setItem('MY_GOURMET_MAP_PAT', newToken.trim());
-                            GITHUB_TOKEN = newToken.trim();
-                            continue;
-                        }
-                    }
-                    
                     alert(`メディア「${file.name}」の保存に失敗しました。\n詳細: ${err.message}`);
                     submitBtn.disabled = false; submitBtn.innerText = "登録";
-                    statusLabel.className = "sync-status-bar error";
-                    statusLabel.innerText = "❌ メディアアップロード失敗";
                     return;
                 }
             }
         }
+        finalFiles = uploadedFiles.map(f => { const copy = { ...f }; delete copy.originalData; return copy; });
+        memo = document.getElementById('shop-memo').value.trim();
+    } else {
+        // ⛰️ その他（飲食店以外）のタイムライン日記用のアップロードフロー
+        const cleanVisits = otherVisitsData.filter(v => v !== null);
+        for (const visit of cleanVisits) {
+            // 各訪問日のDOMから最新値を吸い上げる（念のため）
+            for (const file of visit.files) {
+                if (file.isGitHubUploaded || (file.data && file.data.startsWith('http'))) {
+                    file.isGitHubUploaded = true;
+                    continue;
+                }
+                if (file.data && file.data.includes(',')) {
+                    try {
+                        const targetOrigData = file.originalData || file.data;
+                        const origPath = `shops/${type}/${name}/${timestamp}_${file.name}`;
+                        const origUrl = await uploadToGitHubFile(origPath, targetOrigData);
+                        file.githubUrl = origUrl;
+                        if (file.type && file.type.startsWith('image/')) {
+                            const ext = file.data.startsWith('data:image/webp') ? 'webp' : 'jpg';
+                            const thumbPath = `shops/${type}/${name}/thumb_${timestamp}_${file.name}.${ext}`;
+                            const thumbUrl = await uploadToGitHubFile(thumbPath, file.data);
+                            file.data = thumbUrl;
+                        } else {
+                            file.data = origUrl;
+                        }
+                        file.isGitHubUploaded = true;
+                    } catch (err) {
+                        alert(`メディアの保存に失敗しました。\n詳細: ${err.message}`);
+                        submitBtn.disabled = false; submitBtn.innerText = "登録";
+                        return;
+                    }
+                }
+            }
+            const sanitizedVisitFiles = visit.files.map(f => { const copy = { ...f }; delete copy.originalData; return copy; });
+            finalVisits.push({
+                date: visit.date,
+                memo: visit.memo,
+                files: sanitizedVisitFiles
+            });
+        }
+        // 💡 リスト等での最初表示用サムネイルとして、一番最初の訪問の一番最初の写真をセットしておく
+        if (finalVisits.length > 0 && finalVisits[0].files.length > 0) {
+            finalFiles = [finalVisits[0].files[0]];
+        }
     }
     
-    const sanitizedFiles = uploadedFiles.map(f => {
-        const copy = { ...f }; delete copy.originalData; return copy;
-    });
+    // 💡 データ構造を決定してマージ
+    appData.logs[targetId] = { 
+        id: targetId, type, name, address, building, url, area, price, genre, memo, 
+        lat: null, lng: null, files: finalFiles, visits: finalVisits 
+    };
     
-    // 💡 スプシ側にも型（shopType）を保存するように保持
-    appData.logs[targetId] = { id: targetId, name, address, building, url, area, price, shopType, genre, memo, lat: null, lng: null, files: sanitizedFiles, visitDate: visitDate };
     try {
         statusLabel.innerText = "🚀 スプレッドシートへデータを保存中...";
         const gasRes = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
@@ -650,6 +821,7 @@ function focusShop(shopId) {
     
     document.getElementById('focused-name').innerText = shop.name;
     document.getElementById('focused-address').innerText = shop.address;
+    
     if (shop.building) {
         document.getElementById('focused-building-row').style.display = 'block';
         document.getElementById('focused-building').innerText = shop.building;
@@ -667,29 +839,74 @@ function focusShop(shopId) {
     document.getElementById('focused-area').innerText = shop.area || '未設定';
     document.getElementById('focused-price').innerText = shop.price || '未設定';
     document.getElementById('focused-genre').innerText = shop.genre || '未設定';
-    document.getElementById('focused-date').innerText = shop.visitDate || '未設定'; 
-    document.getElementById('focused-memo').innerText = shop.memo || 'なし';
     
     document.getElementById('focused-edit-btn').onclick = () => editShop(shop.id);
     document.getElementById('focused-app-btn').onclick = () => openNativeMapApp(shop.address, shop.building);
     
-    const mediaGrid = document.getElementById('focused-media-grid');
-    mediaGrid.innerHTML = '';
-    if (shop.files && shop.files.length > 0) {
-        shop.files.forEach(file => {
-            const card = document.createElement('div');
-            card.className = 'focused-media-card';
-            let mediaHtml = file.type && file.type.startsWith('video/') 
-                ? `<video src="${file.data}" controls></video>` 
-                : `<img src="${file.data}" onclick="window.open('${file.githubUrl || file.data}')">`;
-            
-            card.innerHTML = `<div class="focused-media-memo">💬 ${escapeHtml(file.memo || ' ')}</div>${mediaHtml}`;
-            mediaGrid.appendChild(card);
-        });
-        mediaGrid.style.display = 'grid';
+    const isRestaurant = !shop.type || shop.type === '飲食店';
+
+    // 💡 表示モードによる出し分け（飲食店は完全維持、その他は日記タイムライン）
+    if (isRestaurant) {
+        document.getElementById('focused-memo-row').style.display = 'block';
+        document.getElementById('focused-diary-section').style.display = 'none';
+        document.getElementById('focused-memo').innerText = shop.memo || 'なし';
+        
+        const mediaGrid = document.getElementById('focused-media-grid');
+        mediaGrid.innerHTML = '';
+        if (shop.files && shop.files.length > 0) {
+            shop.files.forEach(file => {
+                const card = document.createElement('div');
+                card.className = 'focused-media-card';
+                let mediaHtml = file.type && file.type.startsWith('video/') 
+                    ? `<video src="${file.data}" controls></video>` 
+                    : `<img src="${file.data}" onclick="window.open('${file.githubUrl || file.data}')">`;
+                
+                card.innerHTML = `<div class="focused-media-memo">💬 ${escapeHtml(file.memo || ' ')}</div>${mediaHtml}`;
+                mediaGrid.appendChild(card);
+            });
+            mediaGrid.style.display = 'grid';
+        } else {
+            mediaGrid.style.display = 'none';
+        }
     } else {
-        mediaGrid.style.display = 'none';
+        // ⛰️ その他マップ用の表示（日記タイムライン形式）
+        document.getElementById('focused-memo-row').style.display = 'none';
+        document.getElementById('focused-media-grid').style.display = 'none';
+        
+        const timeline = document.getElementById('focused-diary-timeline');
+        timeline.innerHTML = '';
+        
+        if (shop.visits && shop.visits.length > 0) {
+            shop.visits.forEach(visit => {
+                const div = document.createElement('div');
+                div.className = 'diary-item';
+                
+                let mediaHtml = '';
+                if (visit.files && visit.files.length > 0) {
+                    mediaHtml += `<div class="focused-media-grid" style="display:grid; margin-bottom:10px;">`;
+                    visit.files.forEach(file => {
+                        mediaHtml += `<div class="focused-media-card">`;
+                        mediaHtml += file.type && file.type.startsWith('video/') 
+                            ? `<video src="${file.data}" controls></video>` 
+                            : `<img src="${file.data}" onclick="window.open('${file.githubUrl || file.data}')">`;
+                        mediaHtml += `</div>`;
+                    });
+                    mediaHtml += `</div>`;
+                }
+                
+                div.innerHTML = `
+                    <div class="diary-date">📅 ${visit.date || '日付未設定'}</div>
+                    <div class="diary-memo">${escapeHtml(visit.memo || 'メモなし')}</div>
+                    ${mediaHtml}
+                `;
+                timeline.appendChild(div);
+            });
+        } else {
+            timeline.innerHTML = '<div style="color:#999; font-size:0.85rem;">訪問記録がありません。</div>';
+        }
+        document.getElementById('focused-diary-section').style.display = 'block';
     }
+
     document.getElementById('focused-shop-panel').style.display = 'block';
     document.getElementById('main-google-map').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -704,7 +921,10 @@ function switchPage(pageName) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(`page-${pageName}`).classList.add('active');
     if (pageName === 'main') closeAllFilterTabs();
-    else if (pageName === 'register') clearForm();
+    else if (pageName === 'register') {
+        clearForm();
+        toggleRegisterFormFields();
+    }
 }
 
 function toggleFilterTab(type) {
@@ -735,8 +955,15 @@ function renderApp() {
     
     const shopList = Object.values(appData.logs);
     let matchCount = 0;
+    
     for (const shop of shopList) {
         if (!shop || !shop.name) continue;
+        
+        // 💡 プルダウン選択に応じたフィルタリング（飲食店 or その他）
+        const isShopRestaurant = !shop.type || shop.type === '飲食店';
+        if (currentMapType === 'restaurant' && !isShopRestaurant) continue;
+        if (currentMapType === 'other' && isShopRestaurant) continue;
+
         if (shop.area) uniqueAreas.add(shop.area);
         if (shop.price) uniquePrices.add(shop.price);
         if (shop.genre) uniqueGenres.add(shop.genre);
@@ -749,15 +976,19 @@ function renderApp() {
         const card = document.createElement('div');
         card.className = 'shop-list-card';
         card.setAttribute('onclick', `focusShop('${shop.id}')`);
+        
+        // 💡 リスト用サムネイル表示（その他マップ時も最初の写真があれば表示）
         let mediaWrapperHtml = '';
-        if (shop.files && shop.files.length > 0) {
+        let targetFiles = shop.files || [];
+        
+        if (targetFiles.length > 0) {
             mediaWrapperHtml += `<div class="shop-list-media-wrapper">`;
-            if (shop.files.length > 1) {
+            if (targetFiles.length > 1) {
                 mediaWrapperHtml += `<button class="thumb-nav-btn thumb-nav-prev" onclick="scrollThumb(this, -1)">◀</button>`;
                 mediaWrapperHtml += `<button class="thumb-nav-btn thumb-nav-next" onclick="scrollThumb(this, 1)">▶</button>`;
             }
             mediaWrapperHtml += `<div class="shop-list-media-container">`;
-            shop.files.forEach(f => {
+            targetFiles.forEach(f => {
                 mediaWrapperHtml += f.type && f.type.startsWith('video/') 
                     ? `<video class="shop-list-thumb-item" src="${f.data}"></video>` 
                     : `<img class="shop-list-thumb-item" src="${f.data}">`;
@@ -765,9 +996,11 @@ function renderApp() {
             mediaWrapperHtml += `</div></div>`;
         }
         
+        const badgeType = shop.type ? ` [${escapeHtml(shop.type)}]` : '';
+
         card.innerHTML = `
             <div class="shop-list-info">
-                <div class="shop-list-name">${escapeHtml(shop.name)}</div>
+                <div class="shop-list-name">${escapeHtml(shop.name)}<span style="font-size:0.8rem; font-weight:normal; color:#e67e22;">${badgeType}</span></div>
                 <div class="shop-list-meta"><span>🗺️ ${escapeHtml(shop.area || '未設定')}</span><span>💰 ${escapeHtml(shop.price || '未設定')}</span><span>🏷️ ${escapeHtml(shop.genre || '未設定')}</span></div>
                 <div class="shop-list-address">📍 ${escapeHtml(shop.address + (shop.building ? ' ' + shop.building : ''))}</div>
             </div>
@@ -777,7 +1010,8 @@ function renderApp() {
     }
     
     document.getElementById('shop-count').innerText = matchCount;
-    if (matchCount === 0) listZone.innerHTML = `<div class="no-data-msg">該当する店舗データがありません。</div>`;
+    if (matchCount === 0) listZone.innerHTML = `<div class="no-data-msg">該当するデータがありません。</div>`;
+    
     buildFilterMenu('area', uniqueAreas);
     buildFilterMenu('price', uniquePrices);
     buildFilterMenu('genre', uniqueGenres);
@@ -803,8 +1037,7 @@ function buildDatalist(id, dataSet) {
     datalist.innerHTML = '';
     for (const val of dataSet) {
         const option = document.createElement('option');
-        option.value = val;
-        datalist.appendChild(option);
+        option.value = val; datalist.appendChild(option);
     }
 }
 
@@ -870,39 +1103,53 @@ function editShop(id) {
     const shop = appData.logs[id];
     if (!shop) return;
     switchPage('register');
+    
     document.getElementById('edit-shop-id').value = shop.id;
+    document.getElementById('shop-type').value = shop.type || '飲食店';
     document.getElementById('shop-name').value = shop.name || '';
     document.getElementById('shop-address').value = shop.address || '';
     document.getElementById('shop-building').value = shop.building || ''; 
-    document.getElementById('shop-url').value = shop.url || '';
+    document.getElementById('shop-url').value = shop.url || ''; 
     document.getElementById('shop-area').value = shop.area || ''; 
     document.getElementById('shop-price').value = shop.price || '';
-    document.getElementById('shop-type').value = shop.shopType || 'Restaurant'; // 💡 編集時に種別を復元
     document.getElementById('shop-genre').value = shop.genre || '';
-    document.getElementById('shop-date').value = shop.visitDate || ''; 
-    document.getElementById('shop-memo').value = shop.memo || '';
-    uploadedFiles = shop.files ? JSON.parse(JSON.stringify(shop.files)) : [];
-    renderPhotoPreviews();
+    
+    const isRestaurant = !shop.type || shop.type === '飲食店';
+    if (isRestaurant) {
+        document.getElementById('shop-memo').value = shop.memo || '';
+        uploadedFiles = shop.files ? JSON.parse(JSON.stringify(shop.files)) : [];
+        renderPhotoPreviews();
+    } else {
+        document.getElementById('visit-records-container').innerHTML = '';
+        otherVisitsData = [];
+        if (shop.visits && shop.visits.length > 0) {
+            shop.visits.forEach(v => addVisitRecordRow(v));
+        } else {
+            addVisitRecordRow();
+        }
+    }
+    toggleRegisterFormFields();
 }
 
 function clearForm() {
     document.getElementById('edit-shop-id').value = '';
+    document.getElementById('shop-type').value = '飲食店';
     document.getElementById('shop-name').value = '';
     document.getElementById('shop-address').value = '';
     document.getElementById('shop-building').value = ''; 
     document.getElementById('shop-url').value = ''; 
     document.getElementById('shop-area').value = ''; 
     document.getElementById('shop-price').value = '';
-    document.getElementById('shop-type').value = 'Restaurant'; // 💡 新規作成時はデフォルト「飲食店」に初期化
     document.getElementById('shop-genre').value = '';
-    document.getElementById('shop-date').value = ''; 
     document.getElementById('shop-memo').value = '';
-    uploadedFiles = []; document.getElementById('preview-zone').innerHTML = '';
+    uploadedFiles = []; 
+    document.getElementById('preview-zone').innerHTML = '';
+    document.getElementById('visit-records-container').innerHTML = '';
+    otherVisitsData = [];
 }
 
 function setFilter(type, value) { 
-    currentFilters[type] = value;
-    closeAllFilterTabs();
+    currentFilters[type] = value; closeAllFilterTabs();
     document.getElementById('focused-shop-panel').style.display = 'none';
     if (type === 'area' && value) {
         let word = "";
@@ -912,7 +1159,7 @@ function setFilter(type, value) {
     } else if (!currentFilters.area) {
         document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
     }
-    renderApp();
+    renderApp(); 
 }
 
 function clearFilter() { 
