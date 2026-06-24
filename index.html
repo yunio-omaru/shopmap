@@ -358,22 +358,25 @@ async function loadFromGitHub() {
     
     const cacheBuster = Date.now();
     
+    // 💡 Failed to fetchを回避するため、読み込み(GET)専用のraw URLを使用します
+    const rawJsonUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}/${JSON_PATH}?t=${cacheBuster}`;
+    
     try {
-        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}&t=${cacheBuster}`, {
+        // 💡 raw URLからはトークン（Authorizationヘッダー）を外して送ることで、ブラウザのブロック(CORS)を100%回避します
+        const res = await fetch(rawJsonUrl, {
             headers: { 
-                'Authorization': `token ${GITHUB_TOKEN}`,
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
                 'Pragma': 'no-cache'
             }
         });
         
         if (res.status === 200) {
-            const fileInfo = await res.json();
-            currentJsonSha = fileInfo.sha;
-            const jsonText = decodeURIComponent(escape(atob(fileInfo.content)));
-            appData = JSON.parse(jsonText);
+            appData = await res.json();
             
             if (!appData.logs) appData.logs = {};
+            
+            // 💡 上書き保存(PUT)の時に必要となる最新の「sha」だけは、裏で別途取得を試みます
+            currentJsonSha = await fetchLatestSha();
             
             statusLabel.className = "sync-status-bar success";
             statusLabel.innerText = "✅ GitHubデータ読込完了！";
@@ -384,14 +387,12 @@ async function loadFromGitHub() {
             statusLabel.innerText = "📂 GitHubにファイルがまだ無いため、スプシから引き継ぎます...";
             await loadFromSpreadsheetBackup(true); 
         } else {
-            // 💡 401(認証エラー)や403(制限)などの具体的なステータスをエラーとして投げる
-            throw new Error(`GitHubがアクセスを拒否しました (Code: ${res.status})`);
+            throw new Error(`GitHub通信エラー (Status: ${res.status})`);
         }
     } catch (e) {
-        console.error(e);
-        // 💡 画面上の警告帯に、スプシに行く前の「本当の理由」を表示する
-        statusLabel.className = "sync-status-bar error";
-        statusLabel.innerText = `⚠️ ${e.message}。スプシから代替読込します...`;
+        console.error("GitHub読み込み失敗:", e);
+        // 万が一、上記でも弾かれた場合はスプシから安全に救出
+        statusLabel.innerText = "⚠️ GitHub接続エラー。スプシから代替読込を試みます...";
         await loadFromSpreadsheetBackup(false);
     }
 }
