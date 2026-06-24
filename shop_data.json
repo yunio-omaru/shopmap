@@ -258,28 +258,7 @@
       "lng": null,
       "files": []
     },
-    "shop_1782281174791": {
-      "id": "shop_1782281174791",
-      "name": "ころしのカレー",
-      "address": "〒818-0072 福岡県筑紫野市二日市中央４丁目１２−５",
-      "building": "",
-      "area": "筑紫野",
-      "price": "~1000",
-      "genre": "ランチ、ディナー、カレー",
-      "memo": "変わらずのおいしさ",
-      "lat": null,
-      "lng": null,
-      "files": [
-        {
-          "name": "森の中の木の通路幻想的.jpg",
-          "type": "image/jpeg",
-          "data": "https://raw.githubusercontent.com/yunio-omaru/shopmap/refs/heads/main/shops/Restaurant/ころしのカレー/thumb_1782281174791_森の中の木の通路幻想的.jpg.webp",
-          "memo": "削除用",
-          "isGitHubUploaded": true,
-          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/refs/heads/main/shops/Restaurant/ころしのカレー/1782281174791_森の中の木の通路幻想的.jpg"
-        }
-      ]
-    },
+
     "shop_1782281235907": {
       "id": "shop_1782281235907",
       "name": "ころしのカレー",
