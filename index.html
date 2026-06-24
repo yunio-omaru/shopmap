@@ -47,7 +47,7 @@ button {
 button:disabled {
     background-color: #ccc !important;
     color: #666 !important;
-    cursor: not-allowed !important;
+    cursor: not-allowed !allowed !important;
     opacity: 0.6;
 }
 .btn-sync { background-color: #27ae60; color: white; }
@@ -197,7 +197,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
 
         <div id="main-google-map" class="main-map-container">
-            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=福岡県&z=10&output=embed"></iframe>
+            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82%E5%A4%A9%E7%A5%9E&z=14&output=embed"></iframe>
         </div>
 
         <div id="focused-shop-panel" class="focused-shop-panel">
@@ -294,6 +294,10 @@ const JSON_PATH = "shop_data.json";
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
 
+// 💡 URL自動書き換え防止のための安全なベースURL定義
+const GOOGLE_MAPS_EMBED_BASE = "https" + "://maps.google.com/maps?q=";
+const DEFAULT_MAP_LOCATION = "https" + "://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82%E5%A4%A9%E7%A5%9E&z=14&output=embed";
+
 let appData = { logs: {}, master: {} };
 let currentJsonSha = ""; 
 let currentFilters = { area: '', price: '', genre: '' };
@@ -379,7 +383,6 @@ function unlockUI() {
     document.getElementById('btn-submit-shop').disabled = false;
 }
 
-// 💡 修正版：GitHub APIの規約を守り、ヘッダーのみでキャッシュ対策をして確実に最新SHAを取得する関数
 async function fetchLatestSha() {
     try {
         const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}`, {
@@ -547,8 +550,8 @@ function focusShop(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
     
-    // 🗺️ 修正箇所1：Googleマップ表示URLのタイポ（1{...} から ${...} に修正）
-    document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(shop.address)}&z=16&output=embed`;
+    // 💡 安全なベースURLを使用して店舗の位置を表示
+    document.getElementById('iframe-main-map').src = `${GOOGLE_MAPS_EMBED_BASE}${encodeURIComponent(shop.address)}&z=16&output=embed`;
     document.getElementById('focused-name').innerText = shop.name;
     document.getElementById('focused-address').innerText = shop.address;
     
@@ -589,11 +592,12 @@ function focusShop(shopId) {
     document.getElementById('main-google-map').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// 💡 修正：3の元コード本来の動作を維持
 function openNativeMapApp(address, building) {
     const query = encodeURIComponent(address + (building ? ' ' + building : ''));
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    // 🗺️ 修正箇所2：Android/PCナビ用のURLタイポ（1{...} から ${...} に修正）
-    window.open(isIOS ? `maps://?q=${query}` : `https://maps.google.com/maps?q=${query}`, '_blank');
+    // 元の正常に動いていたURL構造に完全復元
+    window.open(isIOS ? `maps://?q=${query}` : ("https" + "://maps.google.com/maps?q=") + query, '_blank');
 }
 
 function switchPage(pageName) {
@@ -800,10 +804,10 @@ function setFilter(type, value) {
         let word = "";
         const target = Object.values(appData.logs).find(s => s && s.address && (s.area === value || isAreaMatch(s.area, value)));
         word = target ? target.address : (value.includes("福岡") ? value : `福岡県 ${value}`);
-        // 🗺️ 修正箇所3：エリア絞り込みマップ表示URLのタイポ（1{...} から ${...} に修正）
-        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(word)}&z=14&output=embed`;
+        document.getElementById('iframe-main-map').src = `${GOOGLE_MAPS_EMBED_BASE}${encodeURIComponent(word)}&z=14&output=embed`;
     } else if (!currentFilters.area) {
-        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県&z=10&output=embed";
+        // 💡 修正：エリア未選択時はデフォルト（天神・博多）のマップ位置を表示
+        document.getElementById('iframe-main-map').src = DEFAULT_MAP_LOCATION;
     }
     renderApp(); 
 }
@@ -811,7 +815,8 @@ function setFilter(type, value) {
 function clearFilter() { 
     currentFilters.area = ''; currentFilters.price = ''; currentFilters.genre = ''; 
     document.getElementById('focused-shop-panel').style.display = 'none';
-    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県&z=10&output=embed";
+    // 💡 修正：クリア時も「天神・博多」の初期マップ状態に戻す
+    document.getElementById('iframe-main-map').src = DEFAULT_MAP_LOCATION;
     renderApp(); 
 }
 
@@ -819,7 +824,7 @@ function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
-    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近隣含む）":""}`);
+    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近慢含む）":""}`);
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
     if (activeTexts.length > 0) { text.innerText = `🔍 絞り込み中 ➔ ${activeTexts.join(' | ')}`; bar.style.display = 'flex'; }
