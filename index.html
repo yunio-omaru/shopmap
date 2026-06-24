@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店・観光マップ (サムネイルカルーセル＆GitHub直接動画対応版)</title>
+<title>自分専用飲食店・観光マップ (編集プレビュー＆メモ復活対応版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -111,7 +111,6 @@ button:disabled {
 .focused-shop-panel h2 { margin: 0 0 8px 0; font-size: 1.3rem; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
 .focused-shop-panel p { margin: 6px 0; font-size: 0.9rem; color: #444; }
 
-/* 詳細画面のメディア表示欄（遅延プレイヤー等） */
 .focused-media-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px; }
 .focused-media-card { background: #fdfdfd; border: 1px solid #eee; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; box-shadow: 0 1px 4px rgba(0,0,0,0.03); }
 .focused-media-memo { font-size: 0.8rem; font-weight: bold; color: #555; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.2rem; }
@@ -145,7 +144,6 @@ button:disabled {
     text-align: center;
 }
 
-/* 日記・タイムライン用のスタイル */
 .diary-timeline { margin-top: 15px; border-left: 3px solid #ddd; padding-left: 15px; }
 .diary-item { position: relative; margin-bottom: 20px; }
 .diary-item::before { content: ''; position: absolute; left: -22px; top: 3px; width: 10px; height: 10px; background: var(--primary-color); border-radius: 50%; }
@@ -155,7 +153,6 @@ button:disabled {
 .list-section-title { font-size: 1.1rem; font-weight: bold; margin: 20px 0 10px 0; color: #555; }
 .shop-list-container { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 
-/* 一覧カードと前版カルーセル/スライダーCSSの復活 */
 .shop-list-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -175,7 +172,6 @@ button:disabled {
 .shop-list-meta { font-size: 0.8rem; color: #777; display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .shop-list-address { font-size: 0.8rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* スライダー用コンテナ定義（前版の完全再現） */
 .shop-list-media-wrapper {
     position: relative;
     width: 90px;
@@ -225,16 +221,21 @@ button:disabled {
 .carousel-prev { left: 2px; }
 .carousel-next { right: 2px; }
 
-/* 編集画面関連 */
+/* 編集画面関連のスタイルアップデート */
 .github-detect-status { background: #fffde7; border: 1px dashed #fbc02d; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 15px; color: #f57f17; font-weight: bold; }
-.edit-media-list-box { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: #fafafa; }
-.edit-media-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #eee; }
-.edit-media-item:last-child { border-bottom: none; }
-.edit-media-preview-mini { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; background: #222; color: white; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; text-align: center; }
-.edit-media-info { flex: 1; min-width: 0; }
-.edit-media-filename { font-size: 0.75rem; color: #666; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+.edit-media-list-box { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: #fafafa; display: flex; flex-direction: column; gap: 8px; }
+.edit-media-item { display: flex; align-items: center; gap: 12px; padding: 8px; border-bottom: 1px dashed #eee; background: #fff; border-radius: 6px; border: 1px solid #f0f0f0; }
+.edit-media-item:last-child { border-bottom: 1px solid #f0f0f0; }
 
-/* 日記入力フォーム用スタイル */
+/* ミニプレビュー枠の強化（画像表示と動画タップ再生対応） */
+.edit-media-preview-mini { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; background: #222; color: white; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; text-align: center; flex-shrink: 0; overflow: hidden; cursor: pointer; border: 1px solid #ddd; position: relative;}
+.edit-media-preview-mini img { width: 100%; height: 100%; object-fit: cover; }
+.edit-media-preview-mini video { width: 100%; height: 100%; object-fit: cover; }
+.video-edit-badge { position: absolute; bottom: 2px; right: 2px; background: rgba(179, 57, 57, 0.9); color: white; padding: 1px 3px; font-size: 7px; border-radius: 3px; }
+
+.edit-media-info { flex: 1; min-width: 0; }
+.edit-media-filename { font-size: 0.75rem; color: #666; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; font-weight: bold; }
+
 .visit-record-box { border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-bottom: 12px; background: #fdfdfd; position: relative;}
 .btn-del-visit { position: absolute; top: 10px; right: 10px; background: #ff6b6b; color: white; font-size: 0.75rem; padding: 4px 8px; }
 
@@ -402,7 +403,7 @@ textarea.form-control { height: 80px; resize: vertical; }
                 </div>
                 
                 <div class="form-group">
-                    <label>🎬 GitHub検出動画・写真のメモ編集</label>
+                    <label>🎬 GitHub検出動画・写真のメモ編集 (左の枠タップで動画再生可能)</label>
                     <div id="github-media-status-rest" class="github-detect-status">店名確定後にGitHub上のフォルダをスキャンします</div>
                     <div id="edit-media-list-rest" class="edit-media-list-box"></div>
                 </div>
@@ -603,6 +604,7 @@ async function scanGitHubFolderForShop(shopName, shopType) {
     renderEditMediaListUI();
 }
 
+// 編集時に写真メモが消えないよう、過去のデータを完全マッピングして引き継ぐ
 function renderEditMediaListUI() {
     const shopType = document.getElementById('shop-type').value.trim();
     const editId = document.getElementById('edit-shop-id').value;
@@ -616,6 +618,7 @@ function renderEditMediaListUI() {
             return;
         }
 
+        // 過去に保存したメモをマッピング（復活処理）
         const savedMemoMap = {};
         if (shop.files) {
             shop.files.forEach(f => { savedMemoMap[f.name] = f.memo || ''; });
@@ -626,9 +629,19 @@ function renderEditMediaListUI() {
             const row = document.createElement('div');
             row.className = 'edit-media-item';
 
-            let previewHtml = `<div class="edit-media-preview-mini">📸<br>IMAGE</div>`;
+            // ミニプレビュー枠の完全実装（画像可視化＆動画タップ再生）
+            let previewHtml = "";
             if (file.type.startsWith('video/')) {
-                previewHtml = `<div class="edit-media-preview-mini" style="background:#b33939;">🎬<br>VIDEO</div>`;
+                previewHtml = `
+                    <div class="edit-media-preview-mini" onclick="loadEditVideoInline(this, '${file.githubUrl}')">
+                        🎬<br>TAP再生
+                        <span class="video-edit-badge">VIDEO</span>
+                    </div>`;
+            } else {
+                previewHtml = `
+                    <div class="edit-media-preview-mini" onclick="window.open('${file.githubUrl}','_blank')">
+                        <img src="${file.githubUrl}">
+                    </div>`;
             }
 
             row.innerHTML = `
@@ -663,10 +676,21 @@ function renderEditMediaListUI() {
             if (currentDetectedGitHubFiles.length > 0) {
                 currentDetectedGitHubFiles.forEach(file => {
                     const savedMemo = savedMemoMap[file.name] || '';
-                    let previewHtml = `<div class="edit-media-preview-mini">📸<br>IMG</div>`;
+                    
+                    let previewHtml = "";
                     if (file.type.startsWith('video/')) {
-                        previewHtml = `<div class="edit-media-preview-mini" style="background:#b33939;">🎬<br>VDO</div>`;
+                        previewHtml = `
+                            <div class="edit-media-preview-mini" onclick="loadEditVideoInline(this, '${file.githubUrl}')">
+                                🎬<br>TAP再生
+                                <span class="video-edit-badge">VIDEO</span>
+                            </div>`;
+                    } else {
+                        previewHtml = `
+                            <div class="edit-media-preview-mini" onclick="window.open('${file.githubUrl}','_blank')">
+                                <img src="${file.githubUrl}">
+                            </div>`;
                     }
+
                     fileRowsHtml += `
                         <div class="edit-media-item">
                             ${previewHtml}
@@ -700,6 +724,21 @@ function renderEditMediaListUI() {
     }
 }
 
+// 編集画面用：動画ミニプレビューをタップした際にその場で再生する仕組み
+function loadEditVideoInline(element, videoUrl) {
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    video.controls = true;
+    video.autoplay = true;
+    video.style.width = "100%";
+    video.style.height = "100%";
+    video.style.objectFit = "cover";
+    
+    element.innerHTML = "";
+    element.onclick = null; 
+    element.appendChild(video);
+}
+
 function addVisitRecordRow() {
     const container = document.getElementById('visit-records-container');
     const vIdx = container.children.length;
@@ -711,8 +750,19 @@ function addVisitRecordRow() {
     let fileRowsHtml = '';
     if (currentDetectedGitHubFiles.length > 0) {
         currentDetectedGitHubFiles.forEach(file => {
-            let previewHtml = `<div class="edit-media-preview-mini">📸<br>IMG</div>`;
-            if (file.type.startsWith('video/')) previewHtml = `<div class="edit-media-preview-mini" style="background:#b33939;">🎬<br>VDO</div>`;
+            let previewHtml = "";
+            if (file.type.startsWith('video/')) {
+                previewHtml = `
+                    <div class="edit-media-preview-mini" onclick="loadEditVideoInline(this, '${file.githubUrl}')">
+                        🎬<br>TAP再生
+                        <span class="video-edit-badge">VIDEO</span>
+                    </div>`;
+            } else {
+                previewHtml = `
+                    <div class="edit-media-preview-mini" onclick="window.open('${file.githubUrl}','_blank')">
+                        <img src="${file.githubUrl}">
+                    </div>`;
+            }
             
             fileRowsHtml += `
                 <div class="edit-media-item">
@@ -931,7 +981,6 @@ async function saveRegisteredShop() {
     }
 }
 
-// メインメニュー店舗一覧のレンダリング (前版のスライダー完全復活＋融合)
 function renderApp() {
     const listZone = document.getElementById('shop-list-zone');
     listZone.innerHTML = '';
@@ -970,7 +1019,6 @@ function renderApp() {
     targetShops.forEach(shop => {
         const card = document.createElement('div');
         card.className = 'shop-list-card';
-        // カード全体をクリック可能にする（ただしナビボタンを除く）
         card.onclick = (e) => {
             if (e.target.classList.contains('carousel-nav-btn')) return;
             focusShopOnPanel(shop.id);
@@ -978,7 +1026,6 @@ function renderApp() {
 
         let mediaWrapperHtml = '';
         
-        // 前版のカールセル構造（90px × 90px）を復活・適応
         if (shop.files && shop.files.length > 0) {
             let innerThumbsHtml = '';
             shop.files.forEach((file, idx) => {
@@ -993,7 +1040,6 @@ function renderApp() {
                 }
             });
 
-            // 複数枚ある場合のみ、前版の◀︎ ▶︎ ナビボタンを出す仕様
             let navButtonsHtml = '';
             if (shop.files.length > 1) {
                 navButtonsHtml = `
@@ -1031,7 +1077,6 @@ function renderApp() {
     updateFilterBarDisplay();
 }
 
-// カルーセルのスライド切り替え処理（前版の完全再現ロジック）
 function moveCarousel(shopId, direction) {
     const wrapper = document.getElementById(`carousel-${shopId}`);
     if (!wrapper) return;
@@ -1055,7 +1100,6 @@ function moveCarousel(shopId, direction) {
     items[nextIdx].classList.add('active');
 }
 
-// 遅延読み込み用：プレイスホルダーを本物のビデオ要素に置き換える関数
 function loadVideoReal(element, videoUrl) {
     const parent = element.parentNode;
     const video = document.createElement('video');
@@ -1081,7 +1125,6 @@ function loadVideoReal(element, videoUrl) {
     parent.replaceChild(video, element);
 }
 
-// 看板（詳細パネル）
 async function focusShopOnPanel(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
@@ -1377,7 +1420,7 @@ function switchPage(pageName) {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, ''');
 }
 </script>
 </body>
