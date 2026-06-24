@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店・観光マップ (GitHub直接動画対応版)</title>
+<title>自分専用飲食店・観光マップ (サムネイルカルーセル＆GitHub直接動画対応版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -111,7 +111,7 @@ button:disabled {
 .focused-shop-panel h2 { margin: 0 0 8px 0; font-size: 1.3rem; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
 .focused-shop-panel p { margin: 6px 0; font-size: 0.9rem; color: #444; }
 
-/* 遅延読み込み用プレイスホルダーとメディアカード設定 */
+/* 詳細画面のメディア表示欄（遅延プレイヤー等） */
 .focused-media-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px; }
 .focused-media-card { background: #fdfdfd; border: 1px solid #eee; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; box-shadow: 0 1px 4px rgba(0,0,0,0.03); }
 .focused-media-memo { font-size: 0.8rem; font-weight: bold; color: #555; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.2rem; }
@@ -155,6 +155,7 @@ button:disabled {
 .list-section-title { font-size: 1.1rem; font-weight: bold; margin: 20px 0 10px 0; color: #555; }
 .shop-list-container { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 
+/* 一覧カードと前版カルーセル/スライダーCSSの復活 */
 .shop-list-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -173,6 +174,56 @@ button:disabled {
 .shop-list-name { font-weight: bold; font-size: 1.05rem; color: var(--text-color); margin-bottom: 4px; }
 .shop-list-meta { font-size: 0.8rem; color: #777; display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .shop-list-address { font-size: 0.8rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* スライダー用コンテナ定義（前版の完全再現） */
+.shop-list-media-wrapper {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    flex-shrink: 0;
+}
+.shop-list-media-container {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f0f0f0;
+    position: relative;
+}
+.shop-list-thumb-item {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.shop-list-thumb-item.active {
+    display: block;
+}
+.carousel-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 5;
+    font-weight: bold;
+}
+.carousel-nav-btn:hover { background: rgba(0, 0, 0, 0.7); }
+.carousel-prev { left: 2px; }
+.carousel-next { right: 2px; }
 
 /* 編集画面関連 */
 .github-detect-status { background: #fffde7; border: 1px dashed #fbc02d; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 15px; color: #f57f17; font-weight: bold; }
@@ -388,7 +439,6 @@ let currentFilters = { area: '', price: '', genre: '' };
 let currentMapType = 'restaurant'; 
 let isDataLoaded = false; 
 
-// 編集中の特定店舗に関する、GitHubから自動検出したファイル群
 let currentDetectedGitHubFiles = [];
 
 const NEIGHBOR_AREAS = {
@@ -477,7 +527,6 @@ function toggleRegisterFormFields() {
     renderEditMediaListUI();
 }
 
-// 店名が変更されたかフォーカスが外れたタイミングでGitHubスキャンを走らせる
 function handleNameBlur() {
     const name = document.getElementById('shop-name').value.trim();
     const type = document.getElementById('shop-type').value.trim();
@@ -486,7 +535,6 @@ function handleNameBlur() {
     }
 }
 
-// GitHub上の特定店舗フォルダ内をスキャンする共通処理
 async function scanGitHubFolderForShop(shopName, shopType) {
     const folderBase = (shopType === '飲食店' || !shopType) ? 'Restaurant' : 'etc';
     const folderPath = `shops/${folderBase}/${shopName}`;
@@ -500,7 +548,7 @@ async function scanGitHubFolderForShop(shopName, shopType) {
     currentDetectedGitHubFiles = [];
 
     if (!GITHUB_TOKEN) {
-        const noTokenMsg = "⚠️ GitHubトークン未設定のため自動検出をスキップしました（トークンがあれば自動検知します）";
+        const noTokenMsg = "⚠️ GitHubトークン未設定のため自動検出をスキップしました";
         statusRest.innerText = noTokenMsg;
         statusOther.innerText = noTokenMsg;
         return;
@@ -515,11 +563,10 @@ async function scanGitHubFolderForShop(shopName, shopType) {
         if (res.ok) {
             const list = await res.json();
             if (Array.isArray(list)) {
-                // ファイルのみ抽出
                 const files = list.filter(item => item.type === 'file');
                 files.forEach(f => {
                     const lowercaseName = f.name.toLowerCase();
-                    let fileType = "image/jpeg"; // デフォルト
+                    let fileType = "image/jpeg"; 
                     if (lowercaseName.endsWith('.mp4') || lowercaseName.endsWith('.mov') || lowercaseName.endsWith('.webm') || lowercaseName.endsWith('.m4v')) {
                         fileType = "video/mp4";
                     } else if (lowercaseName.endsWith('.png')) {
@@ -541,7 +588,7 @@ async function scanGitHubFolderForShop(shopName, shopType) {
             statusRest.innerText = successMsg;
             statusOther.innerText = successMsg;
         } else if (res.status === 404) {
-            const notFoundMsg = `📁 GitHub上にまだ専用フォルダがありません。店舗保存後に [ shops/${folderBase}/${shopName}/ ] を作成し直結して下さい。`;
+            const notFoundMsg = `📁 GitHub上にまだ専用フォルダがありません。[ shops/${folderBase}/${shopName}/ ] を作成して下さい。`;
             statusRest.innerText = notFoundMsg;
             statusOther.innerText = notFoundMsg;
         } else {
@@ -553,11 +600,9 @@ async function scanGitHubFolderForShop(shopName, shopType) {
         statusOther.innerText = errMsg;
     }
 
-    // 各画面に反映
     renderEditMediaListUI();
 }
 
-// 編集画面内でのメディアメモ入力欄リストの描画
 function renderEditMediaListUI() {
     const shopType = document.getElementById('shop-type').value.trim();
     const editId = document.getElementById('edit-shop-id').value;
@@ -571,7 +616,6 @@ function renderEditMediaListUI() {
             return;
         }
 
-        // 保存済みのメモマップを作る
         const savedMemoMap = {};
         if (shop.files) {
             shop.files.forEach(f => { savedMemoMap[f.name] = f.memo || ''; });
@@ -597,14 +641,11 @@ function renderEditMediaListUI() {
             container.appendChild(row);
         });
     } else {
-        // その他マップ（タイムライン・訪問記録日記形式）
         const container = document.getElementById('visit-records-container');
         container.innerHTML = '';
 
-        // 登録されている訪問履歴の箱を生成
         let visits = shop.visits || [];
         if (visits.length === 0) {
-            // 新規、またはデータ空なら1つ初期枠を作る
             visits = [{ date: '', memo: '' }];
         }
 
@@ -613,7 +654,6 @@ function renderEditMediaListUI() {
             row.className = 'visit-record-box';
             row.id = `visit-row-${vIdx}`;
             
-            // 該当する日の写真用メモマップ
             const savedMemoMap = {};
             if (v.files) {
                 v.files.forEach(f => { savedMemoMap[f.name] = f.memo || ''; });
@@ -651,7 +691,7 @@ function renderEditMediaListUI() {
                     <textarea class="form-control other-visit-memo" placeholder="思い出や日記を記載">${escapeHtml(v.memo || '')}</textarea>
                 </div>
                 <div class="form-group">
-                    <label>🎬 この日の動画・写真（共通フォルダから自動同期）</label>
+                    <label>🎬 この日の動画・写真</label>
                     <div class="edit-media-list-box">${fileRowsHtml}</div>
                 </div>
             `;
@@ -698,7 +738,7 @@ function addVisitRecordRow() {
             <textarea class="form-control other-visit-memo" placeholder="思い出や日記を記載"></textarea>
         </div>
         <div class="form-group">
-            <label>🎬 この日の動画・写真（共通フォルダから自動同期）</label>
+            <label>🎬 この日の動画・写真</label>
             <div class="edit-media-list-box">${fileRowsHtml}</div>
         </div>
     `;
@@ -733,8 +773,6 @@ async function saveJsonToGitHub() {
         if (resGet.ok) {
             const fileData = await resGet.json();
             sha = fileData.sha;
-        } else if (resGet.status !== 404) {
-            throw new Error(`ファイルメタデータ取得失敗 (${resGet.status})`);
         }
 
         const jsonString = JSON.stringify(appData, null, 2);
@@ -757,20 +795,15 @@ async function saveJsonToGitHub() {
             body: JSON.stringify(bodyObj)
         });
 
-        if (!resPut.ok) {
-            const errText = await resPut.text();
-            throw new Error(`GitHubへの書き込みに失敗しました (${resPut.status}): ${errText}`);
-        }
+        if (!resPut.ok) throw new Error("GitHubへの書き込みに失敗しました。");
 
         statusLabel.className = "sync-status-bar success";
         statusLabel.innerText = "✅ GitHubリポジトリへのJSONファイル保存が成功しました！";
         alert("GitHubの shopdata.json への書き込みが完了しました！");
-
     } catch (e) {
         statusLabel.className = "sync-status-bar error";
         statusLabel.innerText = `❌ GitHub JSON保存エラー: ${e.message}`;
         alert(`【GitHub保存失敗】\n原因: ${e.message}`);
-        console.error(e);
     } finally {
         btn.disabled = false;
         btn.innerText = "🐙 GitHubへJSON保存";
@@ -798,8 +831,6 @@ async function saveRegisteredShop() {
 
     submitBtn.disabled = true;
     submitBtn.innerText = "⏳ 保存中...";
-    statusLabel.className = "sync-status-bar";
-    statusLabel.innerText = "🚀 保存処理を開始します...";
 
     if (!area) {
         for (const item of AUTO_AREA_KEYWORDS) {
@@ -819,7 +850,6 @@ async function saveRegisteredShop() {
 
     if (type === '飲食店' || !type) {
         memo = document.getElementById('shop-memo').value;
-        // 飲食店：入力されたメモ欄を収集して構造化
         const inputFields = document.querySelectorAll('.memo-input-field');
         const memoMap = {};
         inputFields.forEach(el => {
@@ -835,18 +865,14 @@ async function saveRegisteredShop() {
             });
         });
     } else {
-        // その他マップ：複数ある訪問カードを集計
         const visitBoxes = document.querySelectorAll('#visit-records-container .visit-record-box');
         visitBoxes.forEach(box => {
             const vDate = box.querySelector('.other-visit-date').value;
             const vMemo = box.querySelector('.other-visit-memo').value;
-            
-            // この日付カードの中にある写真用メモを収集
             const fileMemoInputs = box.querySelectorAll('.other-file-memo');
             let visitFiles = [];
 
             currentDetectedGitHubFiles.forEach(file => {
-                // 今回の訪問箱におけるこのファイル名用の入力欄を探す
                 let matchedMemo = "";
                 fileMemoInputs.forEach(input => {
                     if (input.getAttribute('data-filename') === file.name) {
@@ -854,8 +880,6 @@ async function saveRegisteredShop() {
                     }
                 });
 
-                // メモが書き込まれている、または必須紐付けしたい場合は追加
-                // 基本的には全ファイルに対して各日の個別メモを保持可能にする
                 visitFiles.push({
                     name: file.name,
                     type: file.type,
@@ -874,10 +898,8 @@ async function saveRegisteredShop() {
         });
 
         finalVisits.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        // メイン一覧のサムネイル表示用に、直近の日記の1つ目のファイルをセット
         if (finalVisits.length > 0 && finalVisits[0].files.length > 0) {
-            finalFiles = [{ ...finalVisits[0].files[0] }];
+            finalFiles = [...finalVisits[0].files];
         }
     }
 
@@ -895,21 +917,21 @@ async function saveRegisteredShop() {
             method: "POST",
             body: JSON.stringify(appData)
         });
-        if (!gasRes.ok) throw new Error("スプレッドシートへの保存に失敗しました。");
+        if (!gasRes.ok) throw new Error("保存失敗");
         
         statusLabel.className = "sync-status-bar success";
         statusLabel.innerText = "✅ スプレッドシートへの保存が完了しました！";
         renderApp();
         switchPage('main');
     } catch (e) {
-        alert(`【保存失敗】\n原因: ${e.message}\n\n通信環境の良い場所で再度お試しください。`);
-        console.error(e);
+        alert("保存失敗しました。");
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = "登録";
     }
 }
 
+// メインメニュー店舗一覧のレンダリング (前版のスライダー完全復活＋融合)
 function renderApp() {
     const listZone = document.getElementById('shop-list-zone');
     listZone.innerHTML = '';
@@ -948,25 +970,44 @@ function renderApp() {
     targetShops.forEach(shop => {
         const card = document.createElement('div');
         card.className = 'shop-list-card';
-        card.onclick = () => focusShopOnPanel(shop.id);
+        // カード全体をクリック可能にする（ただしナビボタンを除く）
+        card.onclick = (e) => {
+            if (e.target.classList.contains('carousel-nav-btn')) return;
+            focusShopOnPanel(shop.id);
+        };
 
         let mediaWrapperHtml = '';
-        // 最初の1つ目のファイルをサムネイル枠に表示
+        
+        // 前版のカールセル構造（90px × 90px）を復活・適応
         if (shop.files && shop.files.length > 0) {
-            const firstFile = shop.files[0];
-            const src = firstFile.githubUrl;
-            let thumbHtml = "";
-            if (firstFile.type && firstFile.type.startsWith('video/')) {
-                thumbHtml = `<div class="shop-list-thumb-item" style="background:#222; color:white; font-size:9px; display:flex; align-items:center; justify-content:center; font-weight:bold; height:100%;">🎬動画</div>`;
-            } else {
-                thumbHtml = `<img src="${src}" class="shop-list-thumb-item">`;
+            let innerThumbsHtml = '';
+            shop.files.forEach((file, idx) => {
+                const isActive = idx === 0 ? 'active' : '';
+                if (file.type && file.type.startsWith('video/')) {
+                    innerThumbsHtml += `
+                        <div class="shop-list-thumb-item ${isActive}" data-index="${idx}" style="background:#222; color:white; font-size:9px; display:flex; align-items:center; justify-content:center; font-weight:bold; width:100%; height:100%;">
+                            🎬動画
+                        </div>`;
+                } else {
+                    innerThumbsHtml += `<img src="${file.githubUrl}" class="shop-list-thumb-item ${isActive}" data-index="${idx}">`;
+                }
+            });
+
+            // 複数枚ある場合のみ、前版の◀︎ ▶︎ ナビボタンを出す仕様
+            let navButtonsHtml = '';
+            if (shop.files.length > 1) {
+                navButtonsHtml = `
+                    <button class="carousel-nav-btn carousel-prev" onclick="moveCarousel('${shop.id}', -1)">◀</button>
+                    <button class="carousel-nav-btn carousel-next" onclick="moveCarousel('${shop.id}', 1)">▶</button>
+                `;
             }
 
             mediaWrapperHtml = `
-                <div class="shop-list-media-wrapper">
+                <div class="shop-list-media-wrapper" id="carousel-${shop.id}">
                     <div class="shop-list-media-container">
-                        ${thumbHtml}
+                        ${innerThumbsHtml}
                     </div>
+                    ${navButtonsHtml}
                 </div>
             `;
         }
@@ -990,10 +1031,33 @@ function renderApp() {
     updateFilterBarDisplay();
 }
 
+// カルーセルのスライド切り替え処理（前版の完全再現ロジック）
+function moveCarousel(shopId, direction) {
+    const wrapper = document.getElementById(`carousel-${shopId}`);
+    if (!wrapper) return;
+    
+    const items = wrapper.querySelectorAll('.shop-list-thumb-item');
+    if (items.length <= 1) return;
+    
+    let activeIdx = -1;
+    items.forEach((item, idx) => {
+        if (item.classList.contains('active')) activeIdx = idx;
+    });
+    
+    if (activeIdx === -1) return;
+    
+    items[activeIdx].classList.remove('active');
+    
+    let nextIdx = activeIdx + direction;
+    if (nextIdx >= items.length) nextIdx = 0;
+    if (nextIdx < 0) nextIdx = items.length - 1;
+    
+    items[nextIdx].classList.add('active');
+}
+
 // 遅延読み込み用：プレイスホルダーを本物のビデオ要素に置き換える関数
 function loadVideoReal(element, videoUrl) {
     const parent = element.parentNode;
-    
     const video = document.createElement('video');
     video.src = videoUrl;
     video.controls = true;
@@ -1003,7 +1067,6 @@ function loadVideoReal(element, videoUrl) {
     video.style.objectFit = "cover";
     video.style.borderRadius = "6px";
     
-    // エラーハンドリング (MOVなど非対応形式対応)
     video.onerror = function() {
         const errBtn = document.createElement('div');
         errBtn.style.padding = "10px";
@@ -1018,7 +1081,7 @@ function loadVideoReal(element, videoUrl) {
     parent.replaceChild(video, element);
 }
 
-// 看板（詳細パネル）に対象店舗の情報をフォーカスさせる
+// 看板（詳細パネル）
 async function focusShopOnPanel(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
@@ -1040,7 +1103,7 @@ async function focusShopOnPanel(shopId) {
     document.getElementById('focused-genre').innerText = shop.genre || '未設定';
 
     document.getElementById('focused-app-btn').onclick = () => {
-        window.open(`https://www.google.com/maps/search/?api=1&query=$${encodeURIComponent(shop.name + " " + shop.address)}`, '_blank');
+        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.name + " " + shop.address)}`, '_blank');
     };
 
     document.getElementById('focused-edit-btn').onclick = () => openEditForm(shopId);
@@ -1051,7 +1114,6 @@ async function focusShopOnPanel(shopId) {
     statusMsg.style.display = 'block';
     statusMsg.innerText = "⏳ GitHubから最新の動画・写真をチェック中...";
 
-    // 閲覧時もリアルタイムにGitHubのフォルダを覗きにいく
     const folderBase = (shop.type === '飲食店' || !shop.type) ? 'Restaurant' : 'etc';
     let liveFiles = [];
     
@@ -1077,7 +1139,6 @@ async function focusShopOnPanel(shopId) {
 
     statusMsg.style.display = 'none';
 
-    // 保存されているメモテキストをマッピング
     const memoMap = {};
     if (shop.files) shop.files.forEach(f => { memoMap[f.name] = f.memo || ''; });
 
@@ -1094,7 +1155,6 @@ async function focusShopOnPanel(shopId) {
                 
                 let mediaHtml = "";
                 if (file.type.startsWith('video/')) {
-                    // 遅延プレースホルダー
                     mediaHtml = `
                         <div class="video-placeholder" onclick="loadVideoReal(this, '${file.githubUrl}')">
                             <span>▶ タップして再生</span>
@@ -1112,7 +1172,6 @@ async function focusShopOnPanel(shopId) {
             mediaGrid.style.display = 'none';
         }
     } else {
-        // その他マップ（タイムライン日記形式）
         document.getElementById('focused-memo-row').style.display = 'none';
         mediaGrid.style.display = 'none';
         
@@ -1123,7 +1182,6 @@ async function focusShopOnPanel(shopId) {
                 const div = document.createElement('div');
                 div.className = 'diary-item';
                 
-                // この日の写真用メモ定義
                 const vMemoMap = {};
                 if (visit.files) visit.files.forEach(f => { vMemoMap[f.name] = f.memo || ''; });
 
@@ -1132,7 +1190,6 @@ async function focusShopOnPanel(shopId) {
                     mediaHtml += `<div class="focused-media-grid" style="display:grid; margin-bottom:10px;">`;
                     liveFiles.forEach(file => {
                         const fileMemo = vMemoMap[file.name] || '';
-                        
                         let specificMedia = "";
                         if (file.type.startsWith('video/')) {
                             specificMedia = `
@@ -1161,7 +1218,7 @@ async function focusShopOnPanel(shopId) {
             });
             document.getElementById('focused-diary-section').style.display = 'block';
         } else {
-            timeline.innerHTML = '<div style="color:#999; font-size:0.85rem;">訪問記録日記がありません。編集から日記を追加可能です。</div>';
+            timeline.innerHTML = '<div style="color:#999; font-size:0.85rem;">訪問記録日記がありません。</div>';
             document.getElementById('focused-diary-section').style.display = 'block';
         }
     }
@@ -1171,8 +1228,6 @@ async function focusShopOnPanel(shopId) {
     if (shop.address) {
         const word = shop.address + " " + shop.name;
         document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=" + encodeURIComponent(word) + "&z=14&output=embed";
-    } else if (!currentFilters.area) {
-        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
     }
 }
 
@@ -1196,7 +1251,6 @@ async function openEditForm(shopId) {
 
     toggleRegisterFormFields();
 
-    // 編集を開いた瞬間に自動でGitHubフォルダ内をサーチする
     if (shop.name) {
         await scanGitHubFolderForShop(shop.name, shop.type || "飲食店");
     }
@@ -1264,7 +1318,7 @@ function setFilter(key, value) {
     if (key === 'area' && value) {
         document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=" + encodeURIComponent(value) + "&z=13&output=embed";
     } else if (key === 'area' && !value) {
-        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
+        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡市&z=11&output=embed";
     }
     document.getElementById('focused-shop-panel').style.display = 'none';
     renderApp(); 
@@ -1273,7 +1327,7 @@ function setFilter(key, value) {
 function clearFilter() { 
     currentFilters.area = ''; currentFilters.price = ''; currentFilters.genre = ''; 
     document.getElementById('focused-shop-panel').style.display = 'none';
-    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82&z=11&output=embed";
+    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡市&z=11&output=embed";
     renderApp(); 
 }
 
