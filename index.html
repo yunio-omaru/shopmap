@@ -379,14 +379,13 @@ function unlockUI() {
     document.getElementById('btn-submit-shop').disabled = false;
 }
 
-// 💡 422エラー対策：保存前にGitHubから最新のJSON内容と最新SHAを100%確実に同期する関数
+// 💡 修正版：認証ヘッダーをBearerに変更し、キャッシュも確実に回避する関数
 async function syncAndFetchLatestGitHubData() {
     try {
-        // キャッシュを完全に破壊するために一意のクエリパラメータを付与
         const cacheBuster = Date.now();
         const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}&t=${cacheBuster}`, {
             headers: { 
-                'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                'Authorization': `Bearer ${GITHUB_TOKEN}`, // 👈 token から Bearer に修正
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
                 'Pragma': 'no-cache',
                 'Expires': '0'
@@ -396,19 +395,18 @@ async function syncAndFetchLatestGitHubData() {
             const fileInfo = await res.json();
             currentJsonSha = fileInfo.sha; // 最新のSHAを確実に取得
             
-            // 既存のJSONデータの中身をデコードして読み込む（日本語対応）
+            // 既存のJSONデータの中身をデコードして読み込む
             if (fileInfo.content) {
-                const b64Decoded = atob(fileInfo.content.replace(/\s/g, ''));
-                const binData = new Uint8Array([...b64Decoded].map(c => c.charCodeAt(0)));
-                const decodedJson = new TextDecoder('utf-8').decode(binData);
-                
+                const decodedJson = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g, ''))));
                 const latestData = JSON.parse(decodedJson);
                 if (latestData && latestData.logs) {
-                    appData.logs = Object.assign({}, appData.logs, latestData.logs); // マージして保持
+                    appData.logs = Object.assign({}, appData.logs, latestData.logs); 
                 }
             }
         } else if (res.status === 404) {
-            currentJsonSha = ""; // まだファイルがない場合は空にする
+            currentJsonSha = ""; // まだファイルがない場合は新規作成扱いに
+        } else {
+            console.error(`SHA取得失敗（ステータス: ${res.status}）`);
         }
     } catch (e) {
         console.error("GitHubからの最新データ同期失敗:", e);
@@ -555,6 +553,7 @@ async function saveRegisteredShop() {
     }
 }
 
+// 💡 修正版：写真アップロード用の関数（こちらもBearerに統一）
 async function uploadToGitHubFile(path, base64Data) {
     if (!base64Data || !base64Data.includes(',')) {
         throw new Error("無効なBase64データです。");
@@ -562,7 +561,10 @@ async function uploadToGitHubFile(path, base64Data) {
     const cleanBase64 = base64Data.split(',')[1];
     const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`, {
         method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+        headers: { 
+            'Authorization': `Bearer ${GITHUB_TOKEN}`, // 👈 token から Bearer に修正
+            'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({ message: `Upload media: ${path}`, content: cleanBase64, branch: GITHUB_BRANCH })
     });
     if (!response.ok) {
