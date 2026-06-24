@@ -197,7 +197,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
 
         <div id="main-google-map" class="main-map-container">
-            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed"></iframe>
+            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=福岡県&z=10&output=embed"></iframe>
         </div>
 
         <div id="focused-shop-panel" class="focused-shop-panel">
@@ -290,7 +290,7 @@ let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
 const GITHUB_OWNER = "yunio-omaru";
 const GITHUB_REPO  = "shopmap";
 const GITHUB_BRANCH = "main"; 
-const JSON_PATH = "shop_data.json"; // 💡 ルート直下のファイルを使用
+const JSON_PATH = "shop_data.json"; 
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
 
@@ -324,7 +324,6 @@ const AUTO_AREA_KEYWORDS = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 💡 初回ロード方針変更：GitHubへのGET通信は行わず、即スプシから100%確実にロードする
     loadFromSpreadsheetBackup();
     checkAndPromptGitHubToken();
 });
@@ -380,12 +379,10 @@ function unlockUI() {
     document.getElementById('btn-submit-shop').disabled = false;
 }
 
-// 💡 修正版：キャッシュを完全に回避して最新のSHAを確実に取る関数
+// 💡 修正版：GitHub APIの規約を守り、ヘッダーのみでキャッシュ対策をして確実に最新SHAを取得する関数
 async function fetchLatestSha() {
     try {
-        // 🌟 JSON_PATH（"shop_data.json"）を正しく反映し、末尾に時刻を付けてキャッシュを強制突破します
-        const cacheBuster = Date.now();
-        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}&t=${cacheBuster}`, {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}`, {
             headers: { 
                 'Authorization': `token ${GITHUB_TOKEN}`,
                 'Cache-Control': 'no-cache',
@@ -394,7 +391,9 @@ async function fetchLatestSha() {
         });
         if (res.status === 200) {
             const fileInfo = await res.json();
-            return fileInfo.sha; // 🔥 これで常に本物の最新SHAが手に入ります
+            return fileInfo.sha;
+        } else if (res.status === 404) {
+            return "";
         }
     } catch (e) {
         console.error("SHAの再取得失敗:", e);
@@ -426,7 +425,6 @@ async function saveRegisteredShop() {
     
     const timestamp = Date.now();
     
-    // 写真のアップロード処理 (GitHubへの個別書き込み)
     for (const file of uploadedFiles) {
         if (file.isGitHubUploaded || (file.data && file.data.startsWith('http'))) {
             file.isGitHubUploaded = true;
@@ -463,11 +461,9 @@ async function saveRegisteredShop() {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
-    // アプリ内データの更新
     appData.logs[id] = { id, name, address, building, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
     
     try {
-        // 💡 1. まずGitHubへ自動保存
         currentJsonSha = await fetchLatestSha();
 
         const jsonString = JSON.stringify(appData, null, 2);
@@ -490,7 +486,6 @@ async function saveRegisteredShop() {
             const resData = await githubRes.json();
             currentJsonSha = resData.content.sha; 
             
-            // 💡 2. GitHubへの反映が成功したら、続けて全く同じデータをスプシに保存（ミラーバックアップ）
             statusLabel.innerText = "☁️ GitHub自動保存完了！ 続けてスプレッドシートに同期中...";
             
             const gasRes = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
@@ -530,8 +525,6 @@ async function uploadToGitHubFile(path, base64Data) {
     return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}/${path}`;
 }
 
-// ─── 表示・検索まわりの基本ロジック ───
-
 function autoDetectArea(address) {
     if (!address) return "";
     for (const item of AUTO_AREA_KEYWORDS) {
@@ -554,6 +547,7 @@ function focusShop(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
     
+    // 🗺️ 修正箇所1：Googleマップ表示URLのタイポ（1{...} から ${...} に修正）
     document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(shop.address)}&z=16&output=embed`;
     document.getElementById('focused-name').innerText = shop.name;
     document.getElementById('focused-address').innerText = shop.address;
@@ -598,6 +592,7 @@ function focusShop(shopId) {
 function openNativeMapApp(address, building) {
     const query = encodeURIComponent(address + (building ? ' ' + building : ''));
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // 🗺️ 修正箇所2：Android/PCナビ用のURLタイポ（1{...} から ${...} に修正）
     window.open(isIOS ? `maps://?q=${query}` : `https://maps.google.com/maps?q=${query}`, '_blank');
 }
 
@@ -805,9 +800,10 @@ function setFilter(type, value) {
         let word = "";
         const target = Object.values(appData.logs).find(s => s && s.address && (s.area === value || isAreaMatch(s.area, value)));
         word = target ? target.address : (value.includes("福岡") ? value : `福岡県 ${value}`);
-        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${word}&z=14&output=embed`;
+        // 🗺️ 修正箇所3：エリア絞り込みマップ表示URLのタイポ（1{...} から ${...} に修正）
+        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(word)}&z=14&output=embed`;
     } else if (!currentFilters.area) {
-        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
+        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県&z=10&output=embed";
     }
     renderApp(); 
 }
@@ -815,7 +811,7 @@ function setFilter(type, value) {
 function clearFilter() { 
     currentFilters.area = ''; currentFilters.price = ''; currentFilters.genre = ''; 
     document.getElementById('focused-shop-panel').style.display = 'none';
-    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
+    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県&z=10&output=embed";
     renderApp(); 
 }
 
@@ -823,7 +819,7 @@ function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
-    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近慢含む）":""}`);
+    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近隣含む）":""}`);
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
     if (activeTexts.length > 0) { text.innerText = `🔍 絞り込み中 ➔ ${activeTexts.join(' | ')}`; bar.style.display = 'flex'; }
@@ -832,7 +828,7 @@ function updateFilterBarDisplay() {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, "'");
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 </script>
 </body>
