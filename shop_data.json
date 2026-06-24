@@ -280,6 +280,20 @@
           "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/refs/heads/main/shops/Restaurant/ころしのカレー/1782281174791_森の中の木の通路幻想的.jpg"
         }
       ]
+    },
+    
+    "shop_1782280864591": {
+      "id": "shop_1782280864591",
+      "name": "味処 天六(天六食堂)",
+      "address": "〒818-0071 福岡県筑紫野市二日市西１丁目５−８",
+      "building": "",
+      "area": "筑紫野",
+      "price": "1000-2000",
+      "genre": "ランチ、ディナー",
+      "memo": "ディナーは20時まで\n昭和レトロで安価\n行ってみたい",
+      "lat": null,
+      "lng": null,
+      "files": []
     }
   },
   "master": {}
