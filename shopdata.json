@@ -383,12 +383,30 @@
       "memo": "",
       "lat": null,
       "lng": null,
-      "files": [],
+      "files": [
+        {
+          "name": "IMG_5342.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/甲尾山公園の風車/1782334533178_IMG_5342.jpeg"
+        }
+      ],
       "visits": [
         {
           "date": "2026-05-10",
           "memo": "家族旅行",
-          "files": []
+          "files": [
+            {
+              "name": "IMG_5342.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/甲尾山公園の風車/1782334533178_IMG_5342.jpeg"
+            }
+          ]
         }
       ]
     }
