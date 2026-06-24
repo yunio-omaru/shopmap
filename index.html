@@ -197,7 +197,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
 
         <div id="main-google-map" class="main-map-container">
-            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed"></iframe>
+            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=福岡市&z=12&output=embed"></iframe>
         </div>
 
         <div id="focused-shop-panel" class="focused-shop-panel">
@@ -302,7 +302,7 @@ const NEIGHBOR_AREAS = {
     "天神": ["天神", "大名", "今泉", "西中洲", "渡辺通", "舞鶴"],
     "大名": ["大名", "天神", "今泉", "赤坂"],
     "今泉": ["今泉", "天神", "大名", "薬院"],
-    "博多": ["博多", "博多駅前", "博多駅東", "博多駅南", "祇園", "冷泉", "住吉", "美野島"],
+    "博多": ["博原", "博多駅前", "博多駅東", "博多駅南", "祇園", "冷泉", "住吉", "美野島"],
     "博多駅前": ["博多", "博多駅前", "博多駅東", "祇園", "住吉"],
     "薬院": ["薬院", "今泉", "警固", "平尾", "高砂", "白金"],
     "西中洲": ["西中洲", "天神", "中洲", "春吉"],
@@ -392,7 +392,6 @@ async function saveRegisteredShop() {
     const timestamp = Date.now();
     let targetId = id;
 
-    // 店舗名重複チェックロジック
     if (!targetId) {
         const existingShop = Object.values(appData.logs).find(shop => shop && shop.name === name);
         if (existingShop) {
@@ -409,10 +408,8 @@ async function saveRegisteredShop() {
         }
     }
     
-    // 💡 新規にアップロードが必要なメディアがあるか判定
     const hasNewMedia = uploadedFiles.some(file => !file.isGitHubUploaded && (file.data && file.data.includes(',')));
     
-    // 💡 メディアがあるのにトークンがない場合はここで入力を求める
     if (hasNewMedia && !GITHUB_TOKEN) {
         const token = prompt("画像・動画が添付されています。保存先のGitHubアクセストークンを入力してください:");
         if (token && token.trim() !== "") {
@@ -431,7 +428,6 @@ async function saveRegisteredShop() {
         statusLabel.innerText = "🚀 GitHubへ写真・動画をアップロード中...";
     }
     
-    // 写真・動画のGitHubアップロード処理
     for (const file of uploadedFiles) {
         if (file.isGitHubUploaded || (file.data && file.data.startsWith('http'))) {
             file.isGitHubUploaded = true;
@@ -463,18 +459,15 @@ async function saveRegisteredShop() {
                     console.error("写真保存エラー:", err); 
                     retryCount++;
                     
-                    // 💡 認証エラー(401/403等)が起きた場合は、再度有効なトークンをポップアップで要求
                     if (err.message.includes("401") || err.message.includes("403") || err.message.includes("Failed")) {
                         const newToken = prompt("GitHubトークンが無効または期限切れの可能性があります。\n正しいアクセストークンを再度入力してください:");
                         if (newToken && newToken.trim() !== "") {
                             localStorage.setItem('MY_GOURMET_MAP_PAT', newToken.trim());
                             GITHUB_TOKEN = newToken.trim();
-                            // ループでもう一度アップロードを試みる
                             continue;
                         }
                     }
                     
-                    // トークンが再入力されなかった、またはその他のエラーの場合は処理を中断
                     alert(`メディア「${file.name}」の保存に失敗しました。\n詳細: ${err.message}`);
                     submitBtn.disabled = false; submitBtn.innerText = "登録";
                     statusLabel.className = "sync-status-bar error";
@@ -489,10 +482,8 @@ async function saveRegisteredShop() {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
-    // アプリ内データの更新
     appData.logs[targetId] = { id: targetId, name, address, building, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
     
-    // 💡 GitHubへのJSON保存はスキップし、直接スプレッドシート（GAS）のみへ保存を実行
     try {
         statusLabel.innerText = "🚀 スプレッドシートへデータを保存中...";
         
@@ -551,7 +542,10 @@ function focusShop(shopId) {
     const shop = appData.logs[shopId];
     if (!shop) return;
     
-    document.getElementById('iframe-main-map').src = `http://googleusercontent.com/maps.google.com/${encodeURIComponent(shop.address)}&z=16&output=embed`;
+    // 💡 修正箇所: ?q= パラメータを正しく設定し、ビル名も含めてピン留め
+    const mapQuery = shop.address + (shop.building ? ' ' + shop.building : '');
+    document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=16&output=embed`;
+    
     document.getElementById('focused-name').innerText = shop.name;
     document.getElementById('focused-address').innerText = shop.address;
     
@@ -595,7 +589,7 @@ function focusShop(shopId) {
 function openNativeMapApp(address, building) {
     const query = encodeURIComponent(address + (building ? ' ' + building : ''));
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    window.open(isIOS ? `maps://?q=${query}` : `http://googleusercontent.com/maps.google.com/${query}`, '_blank');
+    window.open(isIOS ? `maps://?q=${query}` : `https://maps.google.com/maps?q=${query}`, '_blank');
 }
 
 function switchPage(pageName) {
@@ -802,9 +796,10 @@ function setFilter(type, value) {
         let word = "";
         const target = Object.values(appData.logs).find(s => s && s.address && (s.area === value || isAreaMatch(s.area, value)));
         word = target ? target.address : (value.includes("福岡") ? value : `福岡県 ${value}`);
-        document.getElementById('iframe-main-map').src = `http://googleusercontent.com/maps.google.com/${encodeURIComponent(word)}&z=14&output=embed`;
+        // 💡 修正箇所: 標準的な埋め込み形式（?q=）に変更
+        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(word)}&z=14&output=embed`;
     } else if (!currentFilters.area) {
-        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
+        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡市&z=12&output=embed";
     }
     renderApp(); 
 }
@@ -812,7 +807,7 @@ function setFilter(type, value) {
 function clearFilter() { 
     currentFilters.area = ''; currentFilters.price = ''; currentFilters.genre = ''; 
     document.getElementById('focused-shop-panel').style.display = 'none';
-    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
+    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡市&z=12&output=embed";
     renderApp(); 
 }
 
