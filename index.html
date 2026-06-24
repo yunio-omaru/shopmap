@@ -365,9 +365,9 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnR
 
 let appData = { logs: {}, master: {} };
 let currentFilters = { area: '', price: '', genre: '' };
-let currentMapType = 'restaurant'; // 現在表示しているマップ種別 ('restaurant' or 'other')
+let currentMapType = 'restaurant'; 
 let uploadedFiles = []; 
-let otherVisitsData = []; // 飲食店以外の訪問履歴（日記データ）を一時保持する配列
+let otherVisitsData = []; 
 let isDataLoaded = false; 
 
 const NEIGHBOR_AREAS = {
@@ -701,7 +701,8 @@ async function saveRegisteredShop() {
             for (let file of v.files) {
                 if (file.isGitHubUploaded || (file.data && file.data.startsWith('http'))) {
                     file.isGitHubUploaded = true;
-                    visitFiles.push(file);
+                    // すでにアップロード済みのデータであればそのままディープコピーして保持
+                    visitFiles.push({ ...file });
                     continue;
                 }
                 if (file.data && file.data.includes(',')) {
@@ -710,7 +711,7 @@ async function saveRegisteredShop() {
                         const origPath = `shops/${folderBase}/${name}/${timestamp}_${file.name}`;
                         const origUrl = await uploadToGitHubFile(origPath, targetOrigData);
                         
-                        // 動画情報を含む全てのパラメータを新しいオブジェクトに引き継ぐ
+                        // 動画タイプ (video/*) や元のname情報を全て維持して再構成
                         visitFiles.push({
                             name: file.name,
                             type: file.type,
@@ -735,7 +736,7 @@ async function saveRegisteredShop() {
 
         // メイン一覧用のサムネイルをセット（直近の訪問記録の1枚目）
         if (finalVisits.length > 0 && finalVisits[0].files.length > 0) {
-            finalFiles = [finalVisits[0].files[0]];
+            finalFiles = [{ ...finalVisits[0].files[0] }];
         }
     }
 
@@ -1014,7 +1015,12 @@ function openEditForm(shopId) {
     } else {
         if (shop.visits && shop.visits.length > 0) {
             shop.visits.forEach(v => {
-                addVisitRecordRow(v);
+                // 既存データを引き継ぐ際も、シャローコピーして崩れないよう配列に追加
+                addVisitRecordRow({
+                    date: v.date || '',
+                    memo: v.memo || '',
+                    files: v.files ? [...v.files] : []
+                });
             });
         }
     }
@@ -1100,7 +1106,7 @@ function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
-    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近微含む）":""}`);
+    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近隣含む）":""}`);
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
     
