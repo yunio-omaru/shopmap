@@ -528,22 +528,24 @@ async function saveRegisteredShop() {
         });
         
         if(githubRes.ok) {
-            const resData = await githubRes.ok ? await githubRes.json() : null;
+            // （省略：成功時の処理はそのままでOKです）
+            const resData = await githubRes.json();
             if (resData && resData.content) currentJsonSha = resData.content.sha; 
-            
             statusLabel.innerText = "☁️ GitHub自動保存完了！ 続けてスプレッドシートに同期中...";
-            
             const gasRes = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
             if (!gasRes.ok) throw new Error("スプシへの同期に失敗しました。");
-            
             statusLabel.className = "sync-status-bar success";
             statusLabel.innerText = "✅ GitHubとスプシの両方にデータを保存しました！";
-            
             renderApp();
             switchPage('main');
         } else {
-            const errText = await githubRes.text();
-            throw new Error(`GitHub保存失敗 Code: ${githubRes.status} / Details: ${errText}`);
+            // 🛑 ここを以下のコードに差し替えてください！
+            const errJson = await githubRes.json().catch(() => null);
+            const errText = errJson ? JSON.stringify(errJson, null, 2) : await githubRes.text();
+            
+            // 422エラーの具体的な理由をポップアップで強制表示
+            alert(`【GitHubが拒否しました】\nStatus: ${githubRes.status}\n\n詳細理由:\n${errText}`);
+            throw new Error(`GitHub保存失敗: ${errText}`);
         }
     } catch (e) {
         alert(`【保存失敗】\n原因: ${e.message}\n\n通信環境の良い場所で再度お試しください。`);
