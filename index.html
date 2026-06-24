@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (GitHub完全同期版)</title>
+<title>自分専用飲食店マップ (GitHub完全同期・バグ修正版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -165,11 +165,9 @@ textarea.form-control { height: 80px; resize: vertical; }
 
     <div id="sync-status" class="sync-status-bar">🔑 GitHub接続を確認中...</div>
 
-    <!-- 🏠 メインメニュー画面 -->
     <div id="page-main" class="page active">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">📍 マイ飲食店マップ</h1>
-            <!-- GitHub完全同期のため「手動保存」は不要になり、同期ステータスのみ表示します -->
             <button id="btn-save-indicator" class="btn-sync" style="background:#4a90e2;" disabled>☁️ GitHub同期</button>
         </header>
         
@@ -221,7 +219,6 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
     </div>
 
-    <!-- ✍️ 店舗登録画面 -->
     <div id="page-register" class="page">
         <header>
             <h1 style="font-size: 1.2rem; margin:0;">✍️ 店舗登録</h1>
@@ -293,12 +290,12 @@ let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
 const GITHUB_OWNER = "yunio-omaru";
 const GITHUB_REPO  = "shopmap";
 const GITHUB_BRANCH = "main"; 
-const JSON_PATH = "shoplist/shop_data.json"; // 🎯 新しいJSONデータ管理パス
+const JSON_PATH = "shoplist/shop_data.json"; 
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
 
 let appData = { logs: {}, master: {} };
-let currentJsonSha = ""; // GitHub更新用のハッシュ
+let currentJsonSha = ""; 
 let currentFilters = { area: '', price: '', genre: '' };
 let uploadedFiles = []; 
 let isDataLoaded = false; 
@@ -355,7 +352,6 @@ function resetGitHubToken() {
     }
 }
 
-// 🌐 1. まず最安全なGitHubからデータを読み込む
 async function loadFromGitHub() {
     const statusLabel = document.getElementById('sync-status');
     statusLabel.innerText = "🔄 GitHubから最新データをロード中...";
@@ -368,7 +364,6 @@ async function loadFromGitHub() {
         if (res.status === 200) {
             const fileInfo = await res.json();
             currentJsonSha = fileInfo.sha;
-            // Base64デコード（日本語の文字化け防止用処理）
             const jsonText = decodeURIComponent(escape(atob(fileInfo.content)));
             appData = JSON.parse(jsonText);
             
@@ -380,11 +375,10 @@ async function loadFromGitHub() {
             unlockUI();
             renderApp();
         } else if (res.status === 404) {
-            // まだGitHubにファイルがない場合はスプシから救出を試みる
             statusLabel.innerText = "📂 GitHubにデータがないため、スプシから読み込みます...";
             await loadFromSpreadsheetBackup();
         } else {
-            throw new Error("GitHub通信エラー");
+            throw new Error("GitHub通信エラー Status: " + res.status);
         }
     } catch (e) {
         console.error(e);
@@ -393,7 +387,6 @@ async function loadFromGitHub() {
     }
 }
 
-// 🌐 2. 代替用：スプレッドシートから読み込む
 async function loadFromSpreadsheetBackup() {
     const statusLabel = document.getElementById('sync-status');
     try {
@@ -413,7 +406,7 @@ async function loadFromSpreadsheetBackup() {
         }
     } catch (e) {
         statusLabel.className = "sync-status-bar error";
-        statusLabel.innerText = "❌ どちらからもデータ読み込みができませんでした。再読み込みしてください。";
+        statusLabel.innerText = "❌ データ読み込みができませんでした。";
     }
 }
 
@@ -422,7 +415,22 @@ function unlockUI() {
     document.getElementById('btn-submit-shop').disabled = false;
 }
 
-// 💾 3. データを保存（GitHub更新 ➔ 同時にスプシへバックアップ）
+// 🎯 最新のSHAをリアルタイムに強制再取得する安全装置
+async function fetchLatestSha() {
+    try {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}`, {
+            headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Cache-Control': 'no-cache' }
+        });
+        if (res.status === 200) {
+            const fileInfo = await res.json();
+            return fileInfo.sha;
+        }
+    } catch (e) {
+        console.error("SHAの再取得失敗:", e);
+    }
+    return currentJsonSha;
+}
+
 async function saveRegisteredShop() {
     if (!isDataLoaded) { alert("データのロードが完了していないため、登録できません。"); return; }
     
@@ -437,7 +445,6 @@ async function saveRegisteredShop() {
     
     if (!name) { alert("店名は必須入力です。"); return; }
     if (!address) { alert("住所は必須入力です。"); return; }
-    
     if (!area) { area = autoDetectArea(address); }
     
     const submitBtn = document.getElementById('btn-submit-shop');
@@ -448,12 +455,11 @@ async function saveRegisteredShop() {
     
     const timestamp = Date.now();
     
-    // 写真のアップロード（ショップリストフォルダ内の店舗名フォルダへ自動仕分け）
+    // 写真のアップロード処理
     for (const file of uploadedFiles) {
         if (!file.isGitHubUploaded && file.data.includes(',')) {
             try {
                 const targetOrigData = file.originalData || file.data;
-                // 📂 shoplist/[店舗名]/ファイル名 の階層で格納
                 const origPath = `shoplist/${name}/${timestamp}_${file.name}`;
                 const origUrl = await uploadToGitHubFile(origPath, targetOrigData);
                 file.githubUrl = origUrl; 
@@ -467,7 +473,12 @@ async function saveRegisteredShop() {
                     file.data = origUrl;
                 }
                 file.isGitHubUploaded = true;
-            } catch (err) { console.error("写真保存エラー:", err); }
+            } catch (err) { 
+                console.error("写真保存エラー:", err); 
+                alert(`メディア「${file.name}」の保存に失敗しました。このファイルを除外して試してください。`);
+                submitBtn.disabled = false; submitBtn.innerText = "登録";
+                return;
+            }
         }
     }
     
@@ -476,13 +487,13 @@ async function saveRegisteredShop() {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
-    // ローカルデータを更新
     appData.logs[id] = { id, name, address, building, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
     
     try {
-        // 💾 ① GitHubのJSONファイルを更新
+        // 🔒 同期ズレ防止のため、保存直前に最新のSHAに更新する
+        currentJsonSha = await fetchLatestSha();
+
         const jsonString = JSON.stringify(appData, null, 2);
-        // 日本語の文字化けを防止するBase64エンコード処理
         const base64Json = btoa(unescape(encodeURIComponent(jsonString)));
         
         const putBody = {
@@ -500,10 +511,9 @@ async function saveRegisteredShop() {
         
         if(githubRes.ok) {
             const resData = await githubRes.json();
-            currentJsonSha = resData.content.sha; // 次回用にSHAを更新
+            currentJsonSha = resData.content.sha; 
             statusLabel.innerText = "☁️ GitHub同期成功！ スプシへミラーバックアップ中...";
             
-            // 💾 ② バックアップとしてスプレッドシートにも投げる（非同期でOK）
             fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) }).catch(e => console.error("スプシ同期失敗:", e));
             
             statusLabel.className = "sync-status-bar success";
@@ -512,10 +522,12 @@ async function saveRegisteredShop() {
             renderApp();
             switchPage('main');
         } else {
-            throw new Error("JSON更新に失敗");
+            const errText = await githubRes.text();
+            throw new Error(`GitHubレスポンスエラー Code: ${githubRes.status} / Details: ${errText}`);
         }
     } catch (e) {
-        alert("GitHubへのデータ保存に失敗しました。トークンの権限や容量を確認してください。");
+        // 🛠️ 画面上に生のエラーを表示して原因を切り分けやすくする
+        alert(`【GitHub保存失敗】\n原因: ${e.message}\n\nトークンが古いか、GitHub上で直接ファイルを編集して同期がズレた可能性があります。一度リロードしてください。`);
         console.error(e);
     } finally {
         submitBtn.disabled = false; submitBtn.innerText = "登録";
@@ -529,11 +541,14 @@ async function uploadToGitHubFile(path, base64Data) {
         headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: `Upload media: ${path}`, content: cleanBase64, branch: GITHUB_BRANCH })
     });
-    if (!response.ok) throw new Error("GitHub Upload Failed");
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Media Upload Failed (${response.status}): ${errText}`);
+    }
     return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}/${path}`;
 }
 
-// ─── 以下、基本ロジックは引き継ぎ ───
+// ─── 基本ロジック ───
 
 function autoDetectArea(address) {
     if (!address) return "";
@@ -583,7 +598,8 @@ function focusShop(shopId) {
         shop.files.forEach(file => {
             const card = document.createElement('div');
             card.className = 'focused-media-card';
-            let mediaHtml = file.type && file.type.startsWith('video/2') 
+            // 💡 修正箇所：file.type.startsWith('video/') のタイポを修正
+            let mediaHtml = file.type && file.type.startsWith('video/') 
                 ? `<video src="${file.data}" controls></video>` 
                 : `<img src="${file.data}" onclick="window.open('${file.githubUrl || file.data}')">`;
             
@@ -808,7 +824,7 @@ function setFilter(type, value) {
         let word = "";
         const target = Object.values(appData.logs).find(s => s && s.address && (s.area === value || isAreaMatch(s.area, value)));
         word = target ? target.address : (value.includes("福岡") ? value : `福岡県 ${value}`);
-        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(word)}&z=14&output=embed`;
+        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${word}&z=14&output=embed`;
     } else if (!currentFilters.area) {
         document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
     }
