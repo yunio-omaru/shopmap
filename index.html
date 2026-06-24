@@ -380,16 +380,21 @@ function unlockUI() {
     document.getElementById('btn-submit-shop').disabled = false;
 }
 
+// 💡 修正版：キャッシュを完全に回避して最新のSHAを確実に取る関数
 async function fetchLatestSha() {
     try {
+        // 🌟 JSON_PATH（"shop_data.json"）を正しく反映し、末尾に時刻を付けてキャッシュを強制突破します
         const cacheBuster = Date.now();
-        // 保存直前に最新のSHA（バージョンキー）を取得する
         const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}&t=${cacheBuster}`, {
-            headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Cache-Control': 'no-cache' }
+            headers: { 
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
         });
         if (res.status === 200) {
             const fileInfo = await res.json();
-            return fileInfo.sha;
+            return fileInfo.sha; // 🔥 これで常に本物の最新SHAが手に入ります
         }
     } catch (e) {
         console.error("SHAの再取得失敗:", e);
