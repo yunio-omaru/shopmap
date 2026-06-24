@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自分専用飲食店マップ (スプシ保存・画像GitHub版)</title>
+<title>自分専用店舗マップ (スプシ保存・画像GitHub版)</title>
 <style>
 :root {
     --primary-color: #4a90e2;
@@ -42,12 +42,14 @@ header {
     gap: 4px;
     align-items: flex-end;
 }
+button, select { 
+    border-radius: 8px; 
+    font-weight: bold; 
+}
 button { 
     cursor: pointer; 
     border: none; 
-    border-radius: 8px; 
     padding: 8px 14px;
-    font-weight: bold; 
     transition: background-color 0.2s;
 }
 button:disabled {
@@ -277,9 +279,17 @@ textarea.form-control { height: 80px; resize: vertical; }
                 <label for="shop-price">価格帯</label>
                 <input type="text" id="shop-price" class="form-control" placeholder="例) 5000円〜6000円">
             </div>
+
+            <div class="form-group">
+                <label for="shop-type">種別</label>
+                <select id="shop-type" class="form-control">
+                    <option value="Restaurant">飲食店</option>
+                    <option value="Other">それ以外</option>
+                </select>
+            </div>
             
             <div class="form-group">
-                <label for="shop-genre">ジャンル（種別）</label>
+                <label for="shop-genre">ジャンル（詳細）</label>
                 <input type="text" id="shop-genre" class="form-control" list="genre-history" placeholder="例) 居酒屋、和食、カフェ、ホテル、美容室など">
                 <datalist id="genre-history"></datalist>
             </div>
@@ -468,6 +478,7 @@ async function saveRegisteredShop() {
     const url = document.getElementById('shop-url').value.trim(); 
     let area = document.getElementById('shop-area').value.trim(); 
     const price = document.getElementById('shop-price').value.trim();
+    const shopType = document.getElementById('shop-type').value; // 💡 プルダウンの値を取得（Restaurant または Other）
     const genre = document.getElementById('shop-genre').value.trim();
     const visitDate = document.getElementById('shop-date').value;
     const memo = document.getElementById('shop-memo').value.trim();
@@ -476,9 +487,6 @@ async function saveRegisteredShop() {
     if (!name) { alert("店名は必須入力です。"); return; }
     if (!address) { alert("住所は必須入力です。"); return; }
     if (!area) { area = autoDetectArea(address); }
-
-    // 💡 ジャンル（種別）によってフォルダの出し分け（空欄なら 'Other'）
-    const folderGenre = genre ? genre : "Other";
     
     const submitBtn = document.getElementById('btn-submit-shop');
     submitBtn.disabled = true; submitBtn.innerText = "⏳ 保存中...";
@@ -537,14 +545,13 @@ async function saveRegisteredShop() {
             while (!uploadSuccess && retryCount < 2) {
                 try {
                     const targetOrigData = file.originalData || file.data;
-                    // 💡 'Restaurant' の部分を動的な folderGenre に修正
-                    const origPath = `shops/${folderGenre}/${name}/${timestamp}_${file.name}`;
+                    // 💡 動的に取得した shopType（Restaurant / Other）を使ってパスを生成
+                    const origPath = `shops/${shopType}/${name}/${timestamp}_${file.name}`;
                     const origUrl = await uploadToGitHubFile(origPath, targetOrigData);
                     file.githubUrl = origUrl;
                     if (file.type && file.type.startsWith('image/')) {
                         const ext = file.data.startsWith('data:image/webp') ? 'webp' : 'jpg';
-                        // 💡 こちらも folderGenre に修正
-                        const thumbPath = `shops/${folderGenre}/${name}/thumb_${timestamp}_${file.name}.${ext}`;
+                        const thumbPath = `shops/${shopType}/${name}/thumb_${timestamp}_${file.name}.${ext}`;
                         const thumbUrl = await uploadToGitHubFile(thumbPath, file.data);
                         file.data = thumbUrl;
                     } else {
@@ -579,7 +586,8 @@ async function saveRegisteredShop() {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
-    appData.logs[targetId] = { id: targetId, name, address, building, url, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles, visitDate: visitDate };
+    // 💡 スプシ側にも型（shopType）を保存するように保持
+    appData.logs[targetId] = { id: targetId, name, address, building, url, area, price, shopType, genre, memo, lat: null, lng: null, files: sanitizedFiles, visitDate: visitDate };
     try {
         statusLabel.innerText = "🚀 スプレッドシートへデータを保存中...";
         const gasRes = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
@@ -869,6 +877,7 @@ function editShop(id) {
     document.getElementById('shop-url').value = shop.url || '';
     document.getElementById('shop-area').value = shop.area || ''; 
     document.getElementById('shop-price').value = shop.price || '';
+    document.getElementById('shop-type').value = shop.shopType || 'Restaurant'; // 💡 編集時に種別を復元
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-date').value = shop.visitDate || ''; 
     document.getElementById('shop-memo').value = shop.memo || '';
@@ -884,6 +893,7 @@ function clearForm() {
     document.getElementById('shop-url').value = ''; 
     document.getElementById('shop-area').value = ''; 
     document.getElementById('shop-price').value = '';
+    document.getElementById('shop-type').value = 'Restaurant'; // 💡 新規作成時はデフォルト「飲食店」に初期化
     document.getElementById('shop-genre').value = '';
     document.getElementById('shop-date').value = ''; 
     document.getElementById('shop-memo').value = '';
@@ -916,7 +926,7 @@ function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
-    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近邻含む）":""}`);
+    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近隣含む）":""}`);
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
     if (activeTexts.length > 0) { text.innerText = `🔍 絞り込み中 ➔ ${activeTexts.join(' | ')}`; bar.style.display = 'flex'; }
