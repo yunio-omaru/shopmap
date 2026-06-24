@@ -476,7 +476,7 @@ async function saveRegisteredShop() {
     const url = document.getElementById('shop-url').value.trim(); 
     let area = document.getElementById('shop-area').value.trim(); 
     const price = document.getElementById('shop-price').value.trim();
-    const shopType = document.getElementById('shop-type').value; // 💡 種別プルダウンの選択値（Restaurant または Other）を取得
+    const shopType = document.getElementById('shop-type').value; 
     const genre = document.getElementById('shop-genre').value.trim();
     const visitDate = document.getElementById('shop-date').value;
     const memo = document.getElementById('shop-memo').value.trim();
@@ -530,6 +530,9 @@ async function saveRegisteredShop() {
         statusLabel.innerText = "🚀 GitHubへ写真・動画をアップロード中...";
     }
     
+    // 種別が Restaurant でない（Other）の場合はフォルダ名を etc に設定
+    const folderName = (shopType === "Restaurant") ? "Restaurant" : "etc";
+    
     for (const file of uploadedFiles) {
         if (file.isGitHubUploaded || (file.data && file.data.startsWith('http'))) {
             file.isGitHubUploaded = true;
@@ -543,14 +546,12 @@ async function saveRegisteredShop() {
             while (!uploadSuccess && retryCount < 2) {
                 try {
                     const targetOrigData = file.originalData || file.data;
-                    // 💡 プルダウンで選ばれた種別（shopType）フォルダ（Restaurant または Other）に動的変更
-                    const origPath = `shops/${shopType}/${name}/${timestamp}_${file.name}`;
+                    const origPath = `shops/${folderName}/${name}/${timestamp}_${file.name}`;
                     const origUrl = await uploadToGitHubFile(origPath, targetOrigData);
                     file.githubUrl = origUrl;
                     if (file.type && file.type.startsWith('image/')) {
                         const ext = file.data.startsWith('data:image/webp') ? 'webp' : 'jpg';
-                        // 💡 こちらも種別フォルダに連動
-                        const thumbPath = `shops/${shopType}/${name}/thumb_${timestamp}_${file.name}.${ext}`;
+                        const thumbPath = `shops/${folderName}/${name}/thumb_${timestamp}_${file.name}.${ext}`;
                         const thumbUrl = await uploadToGitHubFile(thumbPath, file.data);
                         file.data = thumbUrl;
                     } else {
@@ -585,7 +586,22 @@ async function saveRegisteredShop() {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
-    appData.logs[targetId] = { id: targetId, name, address, building, url, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles, visitDate: visitDate };
+    appData.logs[targetId] = { 
+        id: targetId, 
+        name, 
+        address, 
+        building, 
+        url, 
+        area, 
+        price, 
+        shopType, // 種別データを確実に保持
+        genre, 
+        memo, 
+        lat: null, 
+        lng: null, 
+        files: sanitizedFiles, 
+        visitDate: visitDate 
+    };
     try {
         statusLabel.innerText = "🚀 スプレッドシートへデータを保存中...";
         const gasRes = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
@@ -875,6 +891,7 @@ function editShop(id) {
     document.getElementById('shop-url').value = shop.url || '';
     document.getElementById('shop-area').value = shop.area || ''; 
     document.getElementById('shop-price').value = shop.price || '';
+    document.getElementById('shop-type').value = shop.shopType || 'Restaurant'; 
     document.getElementById('shop-genre').value = shop.genre || '';
     document.getElementById('shop-date').value = shop.visitDate || ''; 
     document.getElementById('shop-memo').value = shop.memo || '';
@@ -890,6 +907,7 @@ function clearForm() {
     document.getElementById('shop-url').value = ''; 
     document.getElementById('shop-area').value = ''; 
     document.getElementById('shop-price').value = '';
+    document.getElementById('shop-type').value = 'Restaurant'; 
     document.getElementById('shop-genre').value = '';
     document.getElementById('shop-date').value = ''; 
     document.getElementById('shop-memo').value = '';
