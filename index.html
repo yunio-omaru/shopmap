@@ -197,7 +197,7 @@ textarea.form-control { height: 80px; resize: vertical; }
         </div>
 
         <div id="main-google-map" class="main-map-container">
-            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82%E5%A4%A9%E7%A5%9E&z=14&output=embed"></iframe>
+            <iframe id="iframe-main-map" src="https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed"></iframe>
         </div>
 
         <div id="focused-shop-panel" class="focused-shop-panel">
@@ -290,7 +290,7 @@ let GITHUB_TOKEN = localStorage.getItem('MY_GOURMET_MAP_PAT') || "";
 const GITHUB_OWNER = "yunio-omaru";
 const GITHUB_REPO  = "shopmap";
 const GITHUB_BRANCH = "main"; 
-const JSON_PATH = "shop_data.json"; 
+const JSON_PATH = "shop_data.json"; // 💡 ルート直下のファイルを使用
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyl723dNT8_BuN83wnRMTQP_Ju1_NJXFFU52VQ_D5dqABOpkhtnyVivI2KAzWBehNIizA/exec";
 
@@ -324,6 +324,7 @@ const AUTO_AREA_KEYWORDS = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 💡 初回ロード方針変更：GitHubへのGET通信は行わず、即スプシから100%確実にロードする
     loadFromSpreadsheetBackup();
     checkAndPromptGitHubToken();
 });
@@ -382,12 +383,9 @@ function unlockUI() {
 async function fetchLatestSha() {
     try {
         const cacheBuster = Date.now();
+        // 保存直前に最新のSHA（バージョンキー）を取得する
         const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${JSON_PATH}?ref=${GITHUB_BRANCH}&t=${cacheBuster}`, {
-            headers: { 
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-            }
+            headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Cache-Control': 'no-cache' }
         });
         if (res.status === 200) {
             const fileInfo = await res.json();
@@ -416,35 +414,14 @@ async function saveRegisteredShop() {
     if (!area) { area = autoDetectArea(address); }
     
     const submitBtn = document.getElementById('btn-submit-shop');
-    const statusLabel = document.getElementById('sync-status');
-    const timestamp = Date.now();
-    
-    // 💡 【新規登録 or 編集時の店名重複チェックロジック】
-    let targetId = id; 
-    if (!targetId) {
-        // 新規登録のとき：既存のログから同名の店舗がないか探す
-        const existingShop = Object.values(appData.logs).find(shop => shop && shop.name === name);
-        if (existingShop) {
-            const proceed = confirm("同一店舗名があります。上書きしてもよろしいでしょうか。");
-            if (!proceed) {
-                // キャンセルされた場合は保存処理を中断する
-                return;
-            }
-            // OK（上書き）の場合は、既存店舗のIDをそのまま使用して上書き対象にする
-            targetId = existingShop.id;
-        } else {
-            // 重複がなければ新規にIDを発行して末尾に追加
-            targetId = 'shop_' + timestamp;
-        }
-    } else {
-        // 修正（編集）のとき：既存のID（targetId）の部分をそのまま修正・更新する
-    }
-
     submitBtn.disabled = true; submitBtn.innerText = "⏳ 保存中...";
+    const statusLabel = document.getElementById('sync-status');
     statusLabel.className = "sync-status-bar";
     statusLabel.innerText = "🚀 GitHubへ写真とデータをアップロード中...";
     
-    // 写真のアップロード処理
+    const timestamp = Date.now();
+    
+    // 写真のアップロード処理 (GitHubへの個別書き込み)
     for (const file of uploadedFiles) {
         if (file.isGitHubUploaded || (file.data && file.data.startsWith('http'))) {
             file.isGitHubUploaded = true;
@@ -476,14 +453,16 @@ async function saveRegisteredShop() {
         }
     }
     
+    if (!id) id = 'shop_' + timestamp;
     const sanitizedFiles = uploadedFiles.map(f => {
         const copy = { ...f }; delete copy.originalData; return copy;
     });
     
-    // 💡 既存データを保持したまま、特定のID（新規/既存上書き/編集）の部分だけを書き換える
-    appData.logs[targetId] = { id: targetId, name, address, building, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
+    // アプリ内データの更新
+    appData.logs[id] = { id, name, address, building, area, price, genre, memo, lat: null, lng: null, files: sanitizedFiles };
     
     try {
+        // 💡 1. まずGitHubへ自動保存
         currentJsonSha = await fetchLatestSha();
 
         const jsonString = JSON.stringify(appData, null, 2);
@@ -506,6 +485,7 @@ async function saveRegisteredShop() {
             const resData = await githubRes.json();
             currentJsonSha = resData.content.sha; 
             
+            // 💡 2. GitHubへの反映が成功したら、続けて全く同じデータをスプシに保存（ミラーバックアップ）
             statusLabel.innerText = "☁️ GitHub自動保存完了！ 続けてスプレッドシートに同期中...";
             
             const gasRes = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(appData) });
@@ -544,6 +524,8 @@ async function uploadToGitHubFile(path, base64Data) {
     }
     return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}/${path}`;
 }
+
+// ─── 表示・検索まわりの基本ロジック ───
 
 function autoDetectArea(address) {
     if (!address) return "";
@@ -818,9 +800,9 @@ function setFilter(type, value) {
         let word = "";
         const target = Object.values(appData.logs).find(s => s && s.address && (s.area === value || isAreaMatch(s.area, value)));
         word = target ? target.address : (value.includes("福岡") ? value : `福岡県 ${value}`);
-        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${encodeURIComponent(word)}&z=14&output=embed`;
+        document.getElementById('iframe-main-map').src = `https://maps.google.com/maps?q=${word}&z=14&output=embed`;
     } else if (!currentFilters.area) {
-        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82%E5%A4%A9%E7%A5%9E&z=14&output=embed";
+        document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
     }
     renderApp(); 
 }
@@ -828,7 +810,7 @@ function setFilter(type, value) {
 function clearFilter() { 
     currentFilters.area = ''; currentFilters.price = ''; currentFilters.genre = ''; 
     document.getElementById('focused-shop-panel').style.display = 'none';
-    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=%E7%A6%8F%E5%B2%A1%E5%B8%82%E5%A4%A9%E7%A5%9E&z=14&output=embed";
+    document.getElementById('iframe-main-map').src = "https://maps.google.com/maps?q=福岡県福岡市中央区天神&z=14&output=embed";
     renderApp(); 
 }
 
@@ -836,7 +818,7 @@ function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
-    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近隣含む）":""}`);
+    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近慢含む）":""}`);
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
     if (activeTexts.length > 0) { text.innerText = `🔍 絞り込み中 ➔ ${activeTexts.join(' | ')}`; bar.style.display = 'flex'; }
