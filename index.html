@@ -471,7 +471,6 @@ function addVisitRecordRow(existingData = null) {
     const row = document.createElement('div');
     row.className = 'visit-record-box';
     row.id = `visit-row-${index}`;
-    // 💡 修正箇所: onchange部分の otherVisitsData(${index}) を otherVisitsData[${index}] に修正しました。
     row.innerHTML = `
         <button type="button" class="btn-del-visit" onclick="removeVisitRecordRow(${index})">削除</button>
         <div class="form-group">
@@ -669,6 +668,9 @@ async function saveRegisteredShop() {
     let finalVisits = [];
     let memo = "";
 
+    // 💡 保存先フォルダのベースパスを種別によって自動分岐
+    const folderBase = (type === '飲食店') ? 'Restaurant' : 'etc';
+
     if (type === '飲食店') {
         // 🍔 既存の飲食店アップロードフロー
         for (const file of uploadedFiles) {
@@ -680,7 +682,7 @@ async function saveRegisteredShop() {
             if (file.data && file.data.includes(',')) {
                 try {
                     const targetOrigData = file.originalData || file.data;
-                    const origPath = `shops/Restaurant/${name}/${timestamp}_${file.name}`;
+                    const origPath = `shops/${folderBase}/${name}/${timestamp}_${file.name}`;
                     const origUrl = await uploadToGitHubFile(origPath, targetOrigData);
                     
                     file.githubUrl = origUrl;
@@ -709,7 +711,7 @@ async function saveRegisteredShop() {
                 if (file.data && file.data.includes(',')) {
                     try {
                         const targetOrigData = file.originalData || file.data;
-                        const origPath = `shops/Other/${name}/${timestamp}_${file.name}`;
+                        const origPath = `shops/${folderBase}/${name}/${timestamp}_${file.name}`;
                         const origUrl = await uploadToGitHubFile(origPath, targetOrigData);
                         
                         file.githubUrl = origUrl;
@@ -1114,7 +1116,7 @@ function updateFilterBarDisplay() {
     const bar = document.getElementById('active-filter-bar');
     const text = document.getElementById('active-filter-text');
     let activeTexts = [];
-    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近隣含む）":""}`);
+    if (currentFilters.area) activeTexts.push(`エリア: ${currentFilters.area}${NEIGHBOR_AREAS[currentFilters.area]?"（近微含む）":""}`);
     if (currentFilters.price) activeTexts.push(`価格帯: ${currentFilters.price}`);
     if (currentFilters.genre) activeTexts.push(`ジャンル: ${currentFilters.genre}`);
     
@@ -1218,7 +1220,7 @@ function compressImage(base64Str, maxWidth = 800, quality = 0.75) {
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, '&#039;');
 }
 </script>
 </body>
