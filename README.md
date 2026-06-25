@@ -27,7 +27,7 @@
 * **データベース:** Googleスプレッドシート (Google Apps Script API 経由)
 * **メディアストレージ & 構成管理:** GitHub Repository (`shopdata.json` / `shops/` フォルダ)
 
-## 昨日追加の際
+## 機能追加の際の手順
 * geminiに以下のように頼む。
 * 最新ソースコード添付＋以下記載
 * このwebサイトのソース2件だけ追加してほしい機能があります。
