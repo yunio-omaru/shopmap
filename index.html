@@ -1232,5 +1232,38 @@ function escapeHtml(str) {
     return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, "'");
 }
 </script>
+<script>
+// =========================================================================
+// 追加機能1: 店舗選択時にマップと店舗詳細部分へ自動スクロールさせる
+// =========================================================================
+// 既存の関数を退避しておき、処理を拡張（上書き）します
+const originalFocusShopOnPanel = focusShopOnPanel;
+focusShopOnPanel = function(shopId) {
+    // 1. 既存の店舗詳細表示ロジックをそのまま実行
+    originalFocusShopOnPanel(shopId);
+    
+    // 2. 実行後、メインマップ部分（店舗詳細パネルのすぐ上）にスムーズスクロールさせる
+    const mapElement = document.getElementById('main-google-map');
+    if (mapElement) {
+        mapElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+};
+
+// =========================================================================
+// 追加機能2: メインメニューの［+登録］押下時に必ず入力欄をリセットする
+// =========================================================================
+window.addEventListener('DOMContentLoaded', () => {
+    const registerBtn = document.getElementById('btn-nav-register');
+    if (registerBtn) {
+        // インラインに直書きされている onclick="switchPage('register')" を上書きし、
+        // 遷移前に必ず edit-shop-id を空にする処理を挟むようにします。
+        // （IDが空になることで、既存のswitchPage内にあるリセット機能が正常に発火するようになります）
+        registerBtn.onclick = function() {
+            document.getElementById('edit-shop-id').value = "";
+            switchPage('register');
+        };
+    }
+});
+</script>
 </body>
 </html>
