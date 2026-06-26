@@ -1265,5 +1265,73 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+    // 1. メインメニュー（フィルター等のボタンが並ぶ場所）を取得
+    const menuBar = document.querySelector('.menu-bar');
+    if (!menuBar) return;
+
+    // 2. CSVダウンロードボタンを動的に作成
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'btn-primary';
+    csvBtn.id = 'btn-csv-download';
+    csvBtn.style.backgroundColor = '#e65100'; // 目立つようにオレンジ系の色に設定
+    csvBtn.innerText = '📥 Googleマイマップ用CSV出力';
+
+    // 3. ボタンをメニューバーの最初（［+登録］ボタンの横など）に追加
+    menuBar.appendChild(csvBtn);
+
+    // 4. ボタンがクリックされた時の処理
+    csvBtn.onclick = function() {
+        if (!appData || !appData.logs || Object.keys(appData.logs).length === 0) {
+            alert('出力する店舗データがありません。');
+            return;
+        }
+
+        // CSVのヘッダー行（Googleマイマップが認識しやすい項目名）
+        const headers = ['店舗名', '住所', 'ビル・階数', '種別', 'ジャンル', '価格帯', 'ウェブサイト', '備考'];
+        const csvRows = [headers.join(',')];
+
+        // 登録されている全店舗データをCSVの行データに変換
+        Object.values(appData.logs).forEach(shop => {
+            const rowData = [
+                shop.name || '',
+                shop.address || '',
+                shop.building || '',
+                shop.type || '飲食店',
+                shop.genre || '',
+                shop.price || '',
+                shop.url || '',
+                shop.memo || ''
+            ];
+
+            // カンマや改行、ダブルクォーテーションが含まれてもCSVが壊れないようにエスケープ処理
+            const escapedRow = rowData.map(value => {
+                let text = String(value).replace(/"/g, '""'); // ダブルクォーテーションをエスケープ
+                if (text.includes(',') || text.includes('\n') || text.includes('"')) {
+                    text = `"${text}"`; // カンマや改行があれば全体を""で囲む
+                }
+                return text;
+            });
+
+            csvRows.push(escapedRow.join(','));
+        });
+
+        // データの文字化けを防ぐため、BOM（Byte Order Mark）を付与してUTF-8で保存
+        const csvContent = '\uFEFF' + csvRows.join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        
+        // ファイル名に今日の日付を付与して自動ダウンロードを実行
+        const link = document.createElement('a');
+        const today = new Date().toISOString().split('T')[0];
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `google_my_maps_shops_${today}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+});
+</script>
+
 </body>
 </html>
