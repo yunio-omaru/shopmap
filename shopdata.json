@@ -559,6 +559,22 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1782668099613": {
+      "id": "ID_1782668099613",
+      "type": "飲食店",
+      "name": "SACHiA Beef stroganoff & sweets",
+      "address": "〒812-0054 福岡県福岡市東区馬出２丁目３−４１",
+      "building": "",
+      "url": "",
+      "area": "",
+      "price": "1000〜1500",
+      "genre": "洋食、ランチ",
+      "memo": "水曜限定欧風カレー絶品らしい",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": []
     }
   },
   "master": {}
