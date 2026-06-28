@@ -495,6 +495,22 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1782665320824": {
+      "id": "ID_1782665320824",
+      "type": "飲食店",
+      "name": "パティスリー・ジョルジュマルソー 渡辺通本店",
+      "address": "〒810-0004 福岡県福岡市中央区渡辺通５丁目８−１９ マイスタア５ 1F",
+      "building": "",
+      "url": "https://georges-marceau.take-eats.jp/",
+      "area": "",
+      "price": "1000〜2000",
+      "genre": "スイーツ、カフェ、お土産",
+      "memo": "チーズケーキが美味しいらしい\nwebからテイクアウト予約可能",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": []
     }
   },
   "master": {}
