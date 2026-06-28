@@ -527,6 +527,22 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1782667559393": {
+      "id": "ID_1782667559393",
+      "type": "飲食店",
+      "name": "TACOMIA",
+      "address": "〒810-0064 福岡県福岡市中央区大手門３丁目５−８ アール大濠公園 F1",
+      "building": "",
+      "url": "",
+      "area": "大手門",
+      "price": "〜1500",
+      "genre": "タコス",
+      "memo": "3ピースでも1200円くらい",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": []
     }
   },
   "master": {}
