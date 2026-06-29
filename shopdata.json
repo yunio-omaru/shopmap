@@ -776,6 +776,22 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1782752956972": {
+      "id": "ID_1782752956972",
+      "type": "飲食店",
+      "name": "食堂エスニコ（ethnico）",
+      "address": "〒810-0041 福岡県福岡市中央区大名２丁目１−５０ 2階",
+      "building": "",
+      "url": "https://www.instagram.com/ethnico_daimyo/?ig_mid=3BC91C83-2E3F-450D-A25F-BB8EA3612B43&utm_source=igweb&launch_app_store=true",
+      "area": "大名",
+      "price": "1000〜1500",
+      "genre": "ランチ、定食",
+      "memo": "やすうま、バランス良い定食、テーブル広々",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": []
     }
   },
   "master": {}
