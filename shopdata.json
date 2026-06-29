@@ -760,6 +760,22 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1782751713892": {
+      "id": "ID_1782751713892",
+      "type": "飲食店",
+      "name": "ラーメン れんげ",
+      "address": "〒810-0001 福岡県福岡市中央区天神３丁目３−２６ 佐伯ビル 1階",
+      "building": "",
+      "url": "",
+      "area": "天神",
+      "price": "",
+      "genre": "ラーメン",
+      "memo": "こぼれそぼろ丼うまそう",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": []
     }
   },
   "master": {}
