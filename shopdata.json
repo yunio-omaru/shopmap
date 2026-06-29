@@ -575,6 +575,104 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1782749542031": {
+      "id": "ID_1782749542031",
+      "type": "飲食店",
+      "name": "焼鳥のえーす 大名店",
+      "address": "〒810-0041 福岡県福岡市中央区大名１丁目３−３９ ヨウハビル２Ｆ",
+      "building": "",
+      "url": "yakitori-ace-daimyo.owst.jp",
+      "area": "大名",
+      "price": "",
+      "genre": "居酒屋、焼鳥",
+      "memo": "お通しバーニャカウダー食べ放題\nポテトがうまい\n串も割安",
+      "lat": null,
+      "lng": null,
+      "files": [
+        {
+          "name": "IMG_6601.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "食べ物メニュー",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥のえーす 大名店/1782749885471_IMG_6601.jpeg"
+        },
+        {
+          "name": "IMG_6602.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "飲み物メニュー",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥のえーす 大名店/1782749885471_IMG_6602.jpeg"
+        },
+        {
+          "name": "IMG_6603.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "オススメメニュー",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥のえーす 大名店/1782749885471_IMG_6603.jpeg"
+        },
+        {
+          "name": "IMG_6604.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "バーニャカウダー",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥のえーす 大名店/1782749885471_IMG_6604.jpeg"
+        },
+        {
+          "name": "IMG_6606.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "冷やしフルーツトマト　甘くてうまい",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥のえーす 大名店/1782749885471_IMG_6606.jpeg"
+        },
+        {
+          "name": "IMG_6607.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "梅肉つくね　塩味効いてるがうまい",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥のえーす 大名店/1782749885471_IMG_6607.jpeg"
+        },
+        {
+          "name": "IMG_6608.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "ちょっと塩味薄め、他の塩味ものと食べると◯",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥のえーす 大名店/1782749885471_IMG_6608.jpeg"
+        },
+        {
+          "name": "IMG_6609.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "ここのポテトはうまい",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥のえーす 大名店/1782749885471_IMG_6609.jpeg"
+        },
+        {
+          "name": "IMG_6610.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "イカのクチバシ　味付けがちょうどいい",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥のえーす 大名店/1782749885471_IMG_6610.jpeg"
+        }
+      ],
+      "visits": []
     }
   },
   "master": {}
