@@ -673,6 +673,77 @@
         }
       ],
       "visits": []
+    },
+    "ID_1782750282036": {
+      "id": "ID_1782750282036",
+      "type": "飲食店",
+      "name": "夜半亭",
+      "address": "〒810-0041 福岡県福岡市中央区大名１丁目１２−３０",
+      "building": "",
+      "url": "",
+      "area": "大名",
+      "price": "",
+      "genre": "居酒屋",
+      "memo": "まったり飲めるが飯もうまい\n隠れ家\n092-711-1675",
+      "lat": null,
+      "lng": null,
+      "files": [
+        {
+          "name": "IMG_6611.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "メニュー表は絵本",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/夜半亭/1782750399313_IMG_6611.jpeg"
+        },
+        {
+          "name": "IMG_6612.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "テーブル設定、落花生箸置き",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/夜半亭/1782750399313_IMG_6612.jpeg"
+        },
+        {
+          "name": "IMG_6614.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "マンゴーサワーうめかった",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/夜半亭/1782750399313_IMG_6614.jpeg"
+        },
+        {
+          "name": "IMG_6615.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "お通し豪華",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/夜半亭/1782750399313_IMG_6615.jpeg"
+        },
+        {
+          "name": "IMG_6616.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "無限ピーマン",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/夜半亭/1782750399313_IMG_6616.jpeg"
+        },
+        {
+          "name": "IMG_6617.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "タコぶつ",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/夜半亭/1782750399313_IMG_6617.jpeg"
+        }
+      ],
+      "visits": []
     }
   },
   "master": {}
