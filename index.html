@@ -1333,38 +1333,39 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script>
-// 検索キーワードを保持する変数
-let searchKeyword = "";
+// 検索キーワードを保持するグローバル変数
+let shopSearchKeyword = "";
 
 // =========================================================================
 // 既存のrenderApp（画面描画ロジック）を崩さずに検索フィルターを割り込ませる
 // =========================================================================
-const originalRenderApp = renderApp; // 既存の関数を退避
+const backupOriginalRenderApp = renderApp; // 既存の関数を退避
 
 renderApp = function() {
-    // 1. まず既存の描画処理をそのまま実行（カードを通常通り生成させる）
-    originalRenderApp();
+    // 1. まず既存のエリア・価格・ジャンルの絞り込みとカード生成をそのまま実行
+    backupOriginalRenderApp();
     
-    // 2. 検索キーワードが入力されている場合、店舗名にキーワードが含まれないカードを非表示にする
-    if (searchKeyword.trim() !== "") {
+    // 2. 検索キーワードが入力されている場合のみ、店名マッチングを行う
+    if (shopSearchKeyword.trim() !== "") {
         const cards = document.querySelectorAll('#shop-list-zone .shop-list-card');
         let visibleCount = 0;
         
         cards.forEach(card => {
             const nameEl = card.querySelector('.shop-list-name');
             if (nameEl) {
-                const shopName = nameEl.innerText;
-                // キーワードが含まれているか判定
-                if (shopName.includes(searchKeyword)) {
+                const shopName = nameEl.innerText; // 例:「【飲食店】寿花」など
+                
+                // キーワードが含まれているか判定（大文字小文字を区別しない）
+                if (shopName.toLowerCase().includes(shopSearchKeyword.toLowerCase())) {
                     card.style.display = 'flex';
                     visibleCount++;
                 } else {
-                    card.style.display = 'none'; // マッチしなければ非表示
+                    card.style.display = 'none'; // マッチしなければ非表示にする
                 }
             }
         });
         
-        // 件数表示（shop-count）を検索ヒット数に更新
+        // 📋 登録店舗一覧 (〇件) の数字を、検索にヒットした件数に書き換える
         const countEl = document.getElementById('shop-count');
         if (countEl) {
             countEl.innerText = visibleCount;
@@ -1376,30 +1377,34 @@ renderApp = function() {
         if (existingNoData) existingNoData.remove();
         
         if (visibleCount === 0 && listZone) {
+            // 元の「該当する店舗データがありません」を一旦消す
+            const defaultNoData = listZone.querySelector('.no-data-msg');
+            if (defaultNoData) defaultNoData.remove();
+
             const noData = document.createElement('div');
             noData.id = 'search-no-data-msg';
             noData.className = 'no-data-msg';
-            noData.innerText = '検索キーワードに一致する店舗がありません。';
+            noData.innerText = `「${shopSearchKeyword}」に一致する店舗が見つかりませんでした。`;
             listZone.appendChild(noData);
         }
     }
 };
 
 // =========================================================================
-// メイン画面のメニューバーに検索フォームを動的に追加
+// メイン画面のメニューバーに検索入力欄とボタンを後付けで追加
 // =========================================================================
 window.addEventListener('DOMContentLoaded', () => {
     const menuBar = document.querySelector('.menu-bar');
     if (!menuBar) return;
 
-    // キーワード検索フォーム（入力欄＆ボタン群）のコンテナ作成
+    // 検索フォーム全体をまとめる入れ物（既存のボタンと綺麗に並べるため）
     const searchContainer = document.createElement('div');
     searchContainer.style.display = 'flex';
     searchContainer.style.gap = '4px';
     searchContainer.style.alignItems = 'center';
     searchContainer.style.marginLeft = '4px';
 
-    // キーワード入力欄
+    // 🔍 キーワード入力欄
     const searchInput = document.createElement('input');
     searchInput.type = 'text';
     searchInput.placeholder = '店名検索...';
@@ -1410,61 +1415,66 @@ window.addEventListener('DOMContentLoaded', () => {
     searchInput.style.height = 'auto';
     searchInput.style.marginBottom = '0';
 
-    // 検索ボタン
+    // 🔍 検索ボタン
     const searchBtn = document.createElement('button');
     searchBtn.className = 'btn-primary';
     searchBtn.innerText = '🔍';
-    searchBtn.style.padding = '6px 10px';
+    searchBtn.style.padding = '6px 12px';
     searchBtn.style.fontSize = '0.85rem';
     searchBtn.style.whiteSpace = 'nowrap';
 
-    // 検索クリアボタン (×)
+    // ❌ 検索クリアボタン
     const clearBtn = document.createElement('button');
     clearBtn.className = 'btn-secondary';
     clearBtn.innerText = '×';
-    clearBtn.style.padding = '6px 10px';
+    clearBtn.style.padding = '6px 12px';
     clearBtn.style.fontSize = '0.85rem';
-    clearBtn.style.display = 'none'; // 初期状態は非表示
+    clearBtn.style.display = 'none'; // 最初は隠しておく
 
-    // 検索実行ロジック
+    // 【検索実行時の処理】
     searchBtn.onclick = function() {
-        searchKeyword = searchInput.value.trim();
-        if (searchKeyword !== "") {
+        shopSearchKeyword = searchInput.value.trim();
+        if (shopSearchKeyword !== "") {
             clearBtn.style.display = 'inline-block';
         } else {
             clearBtn.style.display = 'none';
         }
-        // 詳細パネルを開いていた場合は一度閉じる
+        
+        // 店舗詳細パネル（ナビ起動などが表示される青枠）が開いていたら閉じる
         const panel = document.getElementById('focused-shop-panel');
         if (panel) panel.style.display = 'none';
         
-        originalRenderApp(); // 再描画を呼び出してフィルターを適用
+        // 正しく「新・renderApp」を呼び出して、現在の絞り込み状態に検索を重ねる
+        renderApp();
     };
 
-    // Enterキーでも検索できるようにする
+    // 入力欄でEnterキーを押したときも検索を実行させる
     searchInput.onkeydown = function(e) {
         if (e.key === 'Enter') {
             searchBtn.click();
         }
     };
 
-    // クリアボタンを押したときのロジック
+    // 【クリア(×)ボタンを押した時の処理】
     clearBtn.onclick = function() {
         searchInput.value = "";
-        searchKeyword = "";
+        shopSearchKeyword = "";
         clearBtn.style.display = 'none';
+        
         const panel = document.getElementById('focused-shop-panel');
         if (panel) panel.style.display = 'none';
         
-        originalRenderApp(); // 全表示に戻す
+        // 検索を解除して全表示（または既存のエリアフィルター状態）に戻す
+        renderApp();
     };
 
-    // メニューバーへ検索フォーム要素を結合
+    // 作成した部品をメニューバーに合流させる
     searchContainer.appendChild(searchInput);
     searchContainer.appendChild(searchBtn);
     searchContainer.appendChild(clearBtn);
     menuBar.appendChild(searchContainer);
 });
 </script>
+
 </body>
 </html>
