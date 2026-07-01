@@ -792,6 +792,147 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1782924085249": {
+      "id": "ID_1782924085249",
+      "type": "美容室",
+      "name": "soen by HEADLIGHT 春日店",
+      "address": "〒816-0802 福岡県春日市春日原北町２丁目２６−１ サントレモ春日 2F",
+      "building": "",
+      "url": "https://beauty.hotpepper.jp/slnH000305344",
+      "area": "",
+      "price": "3800",
+      "genre": "",
+      "memo": "",
+      "lat": null,
+      "lng": null,
+      "files": [
+        {
+          "name": "IMG_6679.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "髪切る前",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6679.jpeg"
+        }
+      ],
+      "visits": [
+        {
+          "date": "2026-07-01",
+          "memo": "金子さん",
+          "files": [
+            {
+              "name": "IMG_6679.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "髪切る前",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6679.jpeg"
+            },
+            {
+              "name": "IMG_6675.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "前からの耳あたりのモデル",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6675.jpeg"
+            },
+            {
+              "name": "IMG_6677.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "耳あたりから後ろざっくりモデル",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6677.jpeg"
+            },
+            {
+              "name": "IMG_6678.png",
+              "type": "image/png",
+              "data": "",
+              "originalData": "",
+              "memo": "後ろ髪丸まらないように",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6678.png"
+            },
+            {
+              "name": "IMG_6680.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6680.jpeg"
+            },
+            {
+              "name": "IMG_6681.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6681.jpeg"
+            },
+            {
+              "name": "IMG_6682.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6682.jpeg"
+            },
+            {
+              "name": "IMG_6683.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6683.jpeg"
+            },
+            {
+              "name": "IMG_6684.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6684.jpeg"
+            },
+            {
+              "name": "IMG_6685.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6685.jpeg"
+            },
+            {
+              "name": "IMG_6686.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6686.jpeg"
+            },
+            {
+              "name": "IMG_6687.jpeg",
+              "type": "image/jpeg",
+              "data": "",
+              "originalData": "",
+              "memo": "ぱっつん",
+              "isGitHubUploaded": true,
+              "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/etc/soen by HEADLIGHT 春日店/1782924085249_IMG_6687.jpeg"
+            }
+          ]
+        }
+      ]
     }
   },
   "master": {}
