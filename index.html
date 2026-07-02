@@ -1475,6 +1475,50 @@ window.addEventListener('DOMContentLoaded', () => {
     menuBar.appendChild(searchContainer);
 });
 </script>
+<style>
+/* -------------------------------------------------------------------------
+   1. スマホサイズ時の店舗詳細画像の幅はみ出し修正
+   ------------------------------------------------------------------------- */
+#focused-shop-panel .shop-detail-photos-scroll img {
+    max-width: 100% !important; /* 横幅が親要素（青い枠）からはみ出ないように制限 */
+    height: auto !important;     /* 縦横比を崩さずに縮小 */
+    object-fit: contain;
+}
 
+/* -------------------------------------------------------------------------
+   2. メインメニュー（フィルター群）の全体サイズを少し小さくして一覧性を向上
+   ------------------------------------------------------------------------- */
+/* メニューバー全体の上下余白を少し詰め、横スクロールもしやすく調整 */
+.menu-bar {
+    gap: 6px !important;
+    padding: 2px 0 !important;
+}
+
+/* 絞り込みセレクトボックス（エリア・種別・ジャンル・価格帯）をコンパクトに */
+.menu-bar .form-select {
+    font-size: 0.8rem !important;
+    padding: 4px 24px 4px 8px !important; /* 内側の余白を小さく */
+    height: 32px !important;              /* 高さを少し低く調整 */
+}
+
+/* メニューバー内の各種ボタン（クリア、CSV出力、検索、登録など）をコンパクトに */
+.menu-bar .btn-primary, 
+.menu-bar .btn-secondary,
+#btn-csv-download,
+#btn-nav-register {
+    font-size: 0.8rem !important;
+    padding: 4px 10px !important;         /* ボタンを少し小さくして1画面に収まりやすく */
+    height: 32px !important;
+    line-height: 22px !important;
+    whiteSpace: nowrap !important;
+}
+
+/* 検索キーワード入力欄もボタンと高さを統一 */
+.menu-bar input[type="text"] {
+    font-size: 0.8rem !important;
+    padding: 4px 8px !important;
+    height: 32px !important;
+}
+</style>
 </body>
 </html>
