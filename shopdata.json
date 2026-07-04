@@ -949,6 +949,22 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1783125208689": {
+      "id": "ID_1783125208689",
+      "type": "飲食店",
+      "name": "韓国料理居酒屋 ハップル食堂",
+      "address": "〒813-0003 福岡県福岡市東区香住ヶ丘２丁目５−１３",
+      "building": "",
+      "url": "",
+      "area": "",
+      "price": "",
+      "genre": "ランチ",
+      "memo": "昼安い\n11:30〜14:30",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": []
     }
   },
   "master": {}
