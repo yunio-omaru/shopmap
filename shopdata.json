@@ -987,6 +987,28 @@
           "files": []
         }
       ]
+    },
+    "ID_1783144616705": {
+      "id": "ID_1783144616705",
+      "type": "観光地",
+      "name": "クリスタルロード",
+      "address": "〒737-2301 広島県江田島市能美町中町４６１３−１３",
+      "building": "",
+      "url": "https://vt.tiktok.com/ZSCVwaEro/",
+      "area": "江田島",
+      "price": "",
+      "genre": "",
+      "memo": "",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": [
+        {
+          "date": "",
+          "memo": "満潮時水の上を歩く橋\n行ってみたい",
+          "files": []
+        }
+      ]
     }
   },
   "master": {}
