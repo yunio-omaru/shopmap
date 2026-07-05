@@ -1036,10 +1036,56 @@
       "area": "",
       "price": "1000〜1500",
       "genre": "ランチ　オムライス",
-      "memo": "提供が早い、おしゃれな店内",
+      "memo": "提供が早い、おしゃれな店内\n味は普通だった",
       "lat": null,
       "lng": null,
-      "files": [],
+      "files": [
+        {
+          "name": "IMG_6721.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/ASAKOめし/1783263607174_IMG_6721.jpeg"
+        },
+        {
+          "name": "IMG_6722.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/ASAKOめし/1783263607174_IMG_6722.jpeg"
+        },
+        {
+          "name": "IMG_6723.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/ASAKOめし/1783263607174_IMG_6723.jpeg"
+        },
+        {
+          "name": "IMG_6724.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "ハッシュドオムライス",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/ASAKOめし/1783263607174_IMG_6724.jpeg"
+        },
+        {
+          "name": "IMG_6725.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "昔ながらオムライス",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/ASAKOめし/1783263607174_IMG_6725.jpeg"
+        }
+      ],
       "visits": []
     },
     "ID_1783261892292": {
@@ -1049,10 +1095,10 @@
       "address": "〒810-0028 福岡県福岡市中央区浄水通５−３ 浄水通りテラス 1階",
       "building": "",
       "url": "",
-      "area": "",
+      "area": "浄水",
       "price": "",
       "genre": "カフェ",
-      "memo": "タルトがうまいらしい",
+      "memo": "タルトがうまいらしい\nジブリ感",
       "lat": null,
       "lng": null,
       "files": [],
@@ -1069,6 +1115,22 @@
       "price": "",
       "genre": "デザート、ケーキ屋",
       "memo": "ダックワーズ発祥の店",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": []
+    },
+    "ID_1783262969895": {
+      "id": "ID_1783262969895",
+      "type": "飲食店",
+      "name": "海鮮丼てんや",
+      "address": "〒812-0051 福岡県福岡市東区箱崎ふ頭１丁目１−４０",
+      "building": "",
+      "url": "",
+      "area": "",
+      "price": "",
+      "genre": "ランチ、海鮮",
+      "memo": "海鮮丼が安く食えるらしい",
       "lat": null,
       "lng": null,
       "files": [],
