@@ -1199,6 +1199,22 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1783442014973": {
+      "id": "ID_1783442014973",
+      "type": "飲食店",
+      "name": "中華料理 福楽園",
+      "address": "〒810-0013 福岡県福岡市中央区大宮２丁目５−９",
+      "building": "",
+      "url": "",
+      "area": "平尾",
+      "price": "〜1000",
+      "genre": "中華",
+      "memo": "安い\n土日休み",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": []
     }
   },
   "master": {}
