@@ -1215,6 +1215,22 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1783529484224": {
+      "id": "ID_1783529484224",
+      "type": "飲食店",
+      "name": "ハニー珈琲 高宮店",
+      "address": "〒815-0041 福岡県福岡市南区野間１丁目１−１ １F",
+      "building": "",
+      "url": "honeycoffee.com",
+      "area": "",
+      "price": "",
+      "genre": "カフェ",
+      "memo": "全コーヒー試飲可能\n静かでまったり",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": []
     }
   },
   "master": {}
