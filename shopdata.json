@@ -1309,6 +1309,68 @@
         }
       ],
       "visits": []
+    },
+    "ID_1784478982052": {
+      "id": "ID_1784478982052",
+      "type": "飲食店",
+      "name": "焼鳥の豪士 ( Yakitori Goshi )",
+      "address": "〒812-0025 福岡県福岡市博多区店屋町３−５",
+      "building": "",
+      "url": "",
+      "area": "博多",
+      "price": "3000",
+      "genre": "居酒屋",
+      "memo": "スパイシーチキン20時ごろ売り切れやった\n価格良心的　おいしい",
+      "lat": null,
+      "lng": null,
+      "files": [
+        {
+          "name": "IMG_6846.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥の豪士 ( Yakitori Goshi )/1784478982052_IMG_6846.jpeg"
+        },
+        {
+          "name": "IMG_6847.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥の豪士 ( Yakitori Goshi )/1784478982052_IMG_6847.jpeg"
+        },
+        {
+          "name": "IMG_6845.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "お通しはすもつ(本来は枝豆？",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥の豪士 ( Yakitori Goshi )/1784478982052_IMG_6845.jpeg"
+        },
+        {
+          "name": "IMG_6848.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "とうもろこし　唐揚げうまい",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥の豪士 ( Yakitori Goshi )/1784478982052_IMG_6848.jpeg"
+        },
+        {
+          "name": "IMG_6849.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "つくねむっちり",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/焼鳥の豪士 ( Yakitori Goshi )/1784478982052_IMG_6849.jpeg"
+        }
+      ],
+      "visits": []
     }
   },
   "master": {}
