@@ -1231,6 +1231,84 @@
       "lng": null,
       "files": [],
       "visits": []
+    },
+    "ID_1784467616574": {
+      "id": "ID_1784467616574",
+      "type": "飲食店",
+      "name": "旬処 けむり",
+      "address": "〒812-0038 福岡県福岡市博多区祇園町１−１８",
+      "building": "",
+      "url": "",
+      "area": "祇園",
+      "price": "",
+      "genre": "",
+      "memo": "",
+      "lat": null,
+      "lng": null,
+      "files": [],
+      "visits": []
+    },
+    "ID_1784469435252": {
+      "id": "ID_1784469435252",
+      "type": "飲食店",
+      "name": "旬処 けむり",
+      "address": "〒812-0038 福岡県福岡市博多区祇園町１−１８",
+      "building": "",
+      "url": "",
+      "area": "祇園",
+      "price": "3500",
+      "genre": "居酒屋",
+      "memo": "なんでもうまかった\n値段もそれなりで良き",
+      "lat": null,
+      "lng": null,
+      "files": [
+        {
+          "name": "IMG_6851.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "メニュー",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/旬処 けむり/1784478573506_IMG_6851.jpeg"
+        },
+        {
+          "name": "IMG_6853.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "ゴマ鯖、パリパリピーマン甘塩と白だしでうんまい",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/旬処 けむり/1784478573506_IMG_6853.jpeg"
+        },
+        {
+          "name": "IMG_6854.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "マグロの頬焼き",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/旬処 けむり/1784478573506_IMG_6854.jpeg"
+        },
+        {
+          "name": "IMG_6855.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "サバ茶漬け",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/旬処 けむり/1784478573506_IMG_6855.jpeg"
+        },
+        {
+          "name": "IMG_6856.jpeg",
+          "type": "image/jpeg",
+          "data": "",
+          "originalData": "",
+          "memo": "ナス田楽　デカくてうまい",
+          "isGitHubUploaded": true,
+          "githubUrl": "https://raw.githubusercontent.com/yunio-omaru/shopmap/main/shops/Restaurant/旬処 けむり/1784478573506_IMG_6856.jpeg"
+        }
+      ],
+      "visits": []
     }
   },
   "master": {}
